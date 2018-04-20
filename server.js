@@ -10,13 +10,21 @@ app.get('/', function(req, res){
 });
 
 var clientsCount = 0;
+var players = {};
 io.on('connection', function(socket){
+    var id=0;
     clientsCount++;
     console.log(clientsCount + ' clients connected!');
+
+    socket.on('player connect', function(play){
+      id=play.id;
+      io.emit('player connect', play);
+    });
 
     socket.on('disconnect', function(){
         clientsCount--;
         console.log(clientsCount + ' clients connected!');
+        io.emit('player disconnect', id);
     });
 
     socket.on('shared data', function(data){

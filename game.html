@@ -20,6 +20,7 @@
         let ply = new Player(0,0,new Date().getMilliseconds());
         var players = {};
         players[ply.id]=ply;
+        socket.emit('player connect',{x:ply.x, y:ply.y, id:ply.id , name:ply.name});
     
         document.addEventListener('keydown', (event) => {
             keys[event.keyCode]=true;
@@ -27,15 +28,21 @@
         document.addEventListener('keyup', (event) => {
             keys[event.keyCode]=false;
         })
+        
+        socket.on('player connect', function(play){
+            if(play.id == ply.id)return;
+            players[play.id] = new Player(play.x,play.y,play.id);
+        });
+        socket.on('player disconnect', function(id){
+            delete players[id];
+        });
 
         socket.on('shared data', function(data){
             if(data.player.id in players){
-                if(data.player.id != ply.id){
-                    players[data.player.id].x = data.player.x;
-                    players[data.player.id].y = data.player.y;
-                }
-                return;
-            }
+            if(data.player.id != ply.id){
+                players[data.player.id].x = data.player.x;
+                players[data.player.id].y = data.player.y;
+            }return;}
             players[data.player.id] = new Player(data.player.x,data.player.y,data.player.id);
         });
 

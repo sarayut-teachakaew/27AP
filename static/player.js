@@ -1,5 +1,6 @@
 class Player {
     constructor(xPos, yPos,id) {
+        this.name="";
         this.id= id;
         this.x=xPos;
         this.y=yPos;
