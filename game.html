@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>27AP</title>
+    <style>
+        canvas {
+            position:fixed;
+            left:0;
+            top:0;
+            width:100%;
+            height:100%;
+        }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="player.js"></script>
+    <script>
+        var socket = io();
+        var myCanvas;
+        var keys= [];
+        let ply = new Player(0,0,new Date().getMilliseconds());
+        var players = {};
+        players[ply.id]=ply;
+    
+        document.addEventListener('keydown', (event) => {
+            keys[event.keyCode]=true;
+        })
+        document.addEventListener('keyup', (event) => {
+            keys[event.keyCode]=false;
+        })
+
+        socket.on('shared data', function(data){
+            if(data.player.id in players){
+                if(data.player.id != ply.id){
+                    players[data.player.id].x = data.player.x;
+                    players[data.player.id].y = data.player.y;
+                }
+                return;
+            }
+            players[data.player.id] = new Player(data.player.x,data.player.y,data.player.id);
+        });
+
+        function update(){
+            if(keys[87])ply.push(0,-5);//W
+            if(keys[83])ply.push(0,5);//S
+            if(keys[65])ply.push(-5,0);//A
+            if(keys[68])ply.push(5,0);//D
+            ply.update();
+            socket.emit('shared data',{player:{x:ply.x, y:ply.y, id:ply.id}});
+
+            myCanvas.width = window.innerWidth;
+            myCanvas.height = window.innerHeight;
+
+            for(var key in players){
+                players[key].draw(myCanvas);
+            }
+        }
+        setInterval(update, 33);
+    </script>
+</head>
+<body>
+    <canvas id="myCanvas" width="1280" height="720"></canvas>
+    <script>
+        myCanvas = document.getElementById("myCanvas");
+    </script>
+</body>
+</html>
