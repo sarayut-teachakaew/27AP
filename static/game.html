@@ -5,6 +5,7 @@
     <style>
         canvas {
             position:fixed;
+            font-weight: bold;
             left:0;
             top:0;
             width:100%;
@@ -18,13 +19,28 @@
         var myCanvas;
         var getPara = parseURLParams(document.URL);
         var keys= [];
-        var name=getPara.name;
-        console.log("NAME : "+name);
-        let ply = new Player(name,0,0,new Date().getMilliseconds());
-        ply.visible=true;
+        var name='';
+        var skin='';
+
+        if(getPara.name)name=getPara.name;
+        if(getPara.skin){
+            skin=getPara.skin;
+            if(typeof skin != "string")skin=skin[0];
+        }
+
+        var id=0;
         var players = {};
-        players[ply.id]=ply;
-        socket.emit('player connect',{id:ply.id , name:ply.name});
+        var ply;
+        socket.on('user id', function(idBase){
+            id=idBase;
+            console.log("ID : "+id);
+            console.log("NAME : "+name);
+            console.log("SKIN : "+skin);
+            ply = new Player(name,0,0,id,skin);
+            ply.visible=true;
+            players[ply.id]=ply;
+            socket.emit('player connect',{id:ply.id , name:ply.name,skin:ply.skin});
+        });
     
         document.addEventListener('keydown', (event) => {
             keys[event.keyCode]=true;
@@ -37,13 +53,13 @@
             console.log("Loading...");
             //console.log(data.player);
             data.player.forEach(play => {
-                players[play.id] = new Player(play.name,0,0,play.id);
+                players[play.id] = new Player(play.name,0,0,play.id,play.skin);
             });
             console.log("COMPELTE");
         });
         socket.on('player connect', function(play){
             if(play.id == ply.id)return;
-            players[play.id] = new Player(play.name,0,0,play.id);
+            players[play.id] = new Player(play.name,0,0,play.id,play.skin);
         });
         socket.on('player disconnect', function(id){
             delete players[id];
@@ -54,18 +70,21 @@
             if(data.player.id != ply.id){
                 players[data.player.id].x = data.player.x;
                 players[data.player.id].y = data.player.y;
+                players[data.player.id].rad = data.player.rad;
                 players[data.player.id].visible = true;
             }return;}
             //players[data.player.id] = new Player('',data.player.x,data.player.y,data.player.id);
         });
 
         function update(){
+            if(id==0)return;
+            
             if(keys[87])ply.push(0,-5);//W
             if(keys[83])ply.push(0,5);//S
             if(keys[65])ply.push(-5,0);//A
             if(keys[68])ply.push(5,0);//D
             ply.update();
-            socket.emit('shared data',{player:{x:ply.x, y:ply.y, id:ply.id}});
+            socket.emit('shared data',{player:{x:ply.x, y:ply.y, rad:ply.rad, id:ply.id}});
 
             myCanvas.width = window.innerWidth;
             myCanvas.height = window.innerHeight;
@@ -73,8 +92,26 @@
             for(var key in players){
                 players[key].draw(myCanvas);
             }
+
+            for(var key in players){
+                players[key].drawText(myCanvas);
+            }
         }
         setInterval(update, 33);
+
+        function MP(evt) {
+            var gmp=getMousePos(myCanvas, evt);
+            ply.mX = gmp.x;
+            ply.mY = gmp.y;
+        }
+
+        function getMousePos(canvas, evt) {
+            var rect = canvas.getBoundingClientRect();
+            return {
+            x: evt.clientX - rect.left,
+            y: evt.clientY - rect.top
+            };
+        }
 
         function parseURLParams(url) {
             var queryStart = url.indexOf("?") + 1,
@@ -98,7 +135,7 @@
     </script>
 </head>
 <body>
-    <canvas id="myCanvas" width="1280" height="720"></canvas>
+    <canvas id="myCanvas" onmousemove="MP(event)" width="1280" height="720"></canvas>
     <script>
         myCanvas = document.getElementById("myCanvas");
     </script>

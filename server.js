@@ -9,12 +9,12 @@ app.get('/', function(req, res){
   res.sendfile('index.html');
 });
 
-var clientsCount = 0;
+var idBase = 0;
 var players = [];
 io.on('connection', function(socket){
     var id=0;
-    clientsCount++;
-    console.log(clientsCount + ' clients connected!');
+    idBase++;
+    socket.emit('user id',idBase);
 
     socket.on('player connect', function(play){
       //console.log("sending");
@@ -23,12 +23,12 @@ io.on('connection', function(socket){
       id=play.id;
       players.push(play);
       io.emit('player connect', play);
+      console.log("Total Player :"+players.length);
     });
 
     socket.on('disconnect', function(){
-        clientsCount--;
-        console.log(clientsCount + ' clients connected!');
-  
+        console.log("Total Player :"+players.length);
+
         for(var i=0;i<players.length;i++)if(players[i].id==id)players.splice(i, 1);
 
         io.emit('player disconnect', id);
