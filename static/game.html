@@ -1,106 +1,147 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>27AP</title>
     <style>
         canvas {
-            position:fixed;
+            position: fixed;
             font-weight: bold;
-            left:0;
-            top:0;
-            width:100%;
-            height:100%;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
         }
     </style>
     <script src="/socket.io/socket.io.js"></script>
     <script src="player.js"></script>
+    <script src="polygon.js"></script>
     <script>
         var socket = io();
         var myCanvas;
         var getPara = parseURLParams(document.URL);
-        var keys= [];
-        var name='';
-        var skin='';
+        var keys = [];
+        var name = '';
+        var skin = '';
 
-        if(getPara.name)name=getPara.name;
-        if(getPara.skin){
-            skin=getPara.skin;
-            if(typeof skin != "string")skin=skin[0];
+        //START create polygon
+        var numberPolyY = 43;
+        var numberPolyX = 50; //soft code
+        //create 2D array  
+        var polygonArray = [numberPolyY];
+        for (i = 0; i < numberPolyX; i ++) {
+            polygonArray[i] = [];
+        }
+        var polyPosX = 0;
+        var polyPosY = 100;
+        var polySize = 70;
+        for (i = 0; i < numberPolyY; i++) {
+            for (j = 0; j < numberPolyX; j++) {
+                if (j % 2 == 0) {
+                    polygonArray[i][j] = new Polygon(polyPosX, polyPosY - 60, polySize, Math.floor(Math.random() * 6));
+                }
+                else {
+                    polygonArray[i][j] = new Polygon(polyPosX, polyPosY, polySize, Math.floor(Math.random() * 6));
+                }
+                polyPosX += 105;
+            }
+            polyPosX = 0;
+            polyPosY += 120;
+        }
+        //END create polygon
+
+        if (getPara.name) name = getPara.name;
+        if (getPara.skin) {
+            skin = getPara.skin;
+            if (typeof skin != "string") skin = skin[0];
         }
 
-        var id=0;
+        var id = 0;
         var players = {};
         var ply;
-        socket.on('user id', function(idBase){
-            id=idBase;
-            console.log("ID : "+id);
-            console.log("NAME : "+name);
-            console.log("SKIN : "+skin);
-            ply = new Player(name,0,0,id,skin);
-            ply.visible=true;
-            players[ply.id]=ply;
-            socket.emit('player connect',{id:ply.id , name:ply.name,skin:ply.skin});
+        socket.on('user id', function (idBase) {
+            id = idBase;
+            console.log("ID : " + id);
+            console.log("NAME : " + name);
+            console.log("SKIN : " + skin);
+            ply = new Player(name, 0, 0, id, skin);
+            ply.visible = true;
+            players[ply.id] = ply;
+            socket.emit('player connect', { id: ply.id, name: ply.name, skin: ply.skin });
         });
-    
+
         document.addEventListener('keydown', (event) => {
-            keys[event.keyCode]=true;
+            keys[event.keyCode] = true;
         })
         document.addEventListener('keyup', (event) => {
-            keys[event.keyCode]=false;
+            keys[event.keyCode] = false;
         })
-        
-        socket.on('load game', function(data){
+
+        socket.on('load game', function (data) {
             console.log("Loading...");
             //console.log(data.player);
             data.player.forEach(play => {
-                players[play.id] = new Player(play.name,0,0,play.id,play.skin);
+                players[play.id] = new Player(play.name, 0, 0, play.id, play.skin);
             });
             console.log("COMPELTE");
         });
-        socket.on('player connect', function(play){
-            if(play.id == ply.id)return;
-            players[play.id] = new Player(play.name,0,0,play.id,play.skin);
+        socket.on('player connect', function (play) {
+            if (play.id == ply.id) return;
+            players[play.id] = new Player(play.name, 0, 0, play.id, play.skin);
         });
-        socket.on('player disconnect', function(id){
+        socket.on('player disconnect', function (id) {
             delete players[id];
         });
 
-        socket.on('shared data', function(data){
-            if(data.player.id in players){
-            if(data.player.id != ply.id){
-                players[data.player.id].x = data.player.x;
-                players[data.player.id].y = data.player.y;
-                players[data.player.id].rad = data.player.rad;
-                players[data.player.id].visible = true;
-            }return;}
+        socket.on('shared data', function (data) {
+            if (data.player.id in players) {
+                if (data.player.id != ply.id) {
+                    players[data.player.id].x = data.player.x;
+                    players[data.player.id].y = data.player.y;
+                    players[data.player.id].rad = data.player.rad;
+                    players[data.player.id].visible = true;
+                } return;
+            }
             //players[data.player.id] = new Player('',data.player.x,data.player.y,data.player.id);
         });
 
-        function update(){
-            if(id==0)return;
-            
-            if(keys[87])ply.push(0,-5);//W
-            if(keys[83])ply.push(0,5);//S
-            if(keys[65])ply.push(-5,0);//A
-            if(keys[68])ply.push(5,0);//D
+        function update() {
+            if (id == 0) return;
+
+            if (keys[87]) ply.push(0, -5);//W
+            if (keys[83]) ply.push(0, 5);//S
+            if (keys[65]) ply.push(-5, 0);//A
+            if (keys[68]) ply.push(5, 0);//D
             ply.update();
-            socket.emit('shared data',{player:{x:ply.x, y:ply.y, rad:ply.rad, id:ply.id}});
+            socket.emit('shared data', { player: { x: ply.x, y: ply.y, rad: ply.rad, id: ply.id } });
 
             myCanvas.width = window.innerWidth;
             myCanvas.height = window.innerHeight;
+            
+            //START draw polygon
+            for (i = 0; i < numberPolyY; i++) {
+                for (j = 0; j < numberPolyX; j++) {
+                    polygonArray[i][j].draw(myCanvas);
+                }
+            }
+            //END draw polygon
 
-            for(var key in players){
+            for (var key in players) {
                 players[key].draw(myCanvas);
             }
 
-            for(var key in players){
+            for (var key in players) {
                 players[key].drawText(myCanvas);
             }
+
+            
+
+
         }
         setInterval(update, 33);
 
         function MP(evt) {
-            var gmp=getMousePos(myCanvas, evt);
+            var gmp = getMousePos(myCanvas, evt);
             ply.mX = gmp.x;
             ply.mY = gmp.y;
         }
@@ -108,17 +149,17 @@
         function getMousePos(canvas, evt) {
             var rect = canvas.getBoundingClientRect();
             return {
-            x: evt.clientX - rect.left,
-            y: evt.clientY - rect.top
+                x: evt.clientX - rect.left,
+                y: evt.clientY - rect.top
             };
         }
 
         function parseURLParams(url) {
             var queryStart = url.indexOf("?") + 1,
-            queryEnd   = url.indexOf("#") + 1 || url.length + 1,
-            query = url.slice(queryStart, queryEnd - 1),
-            pairs = query.replace(/\+/g, " ").split("&"),
-            parms = {}, i, n, v, nv;
+                queryEnd = url.indexOf("#") + 1 || url.length + 1,
+                query = url.slice(queryStart, queryEnd - 1),
+                pairs = query.replace(/\+/g, " ").split("&"),
+                parms = {}, i, n, v, nv;
 
             if (query === url || query === "") return;
 
@@ -126,7 +167,7 @@
                 nv = pairs[i].split("=", 2);
                 n = decodeURIComponent(nv[0]);
                 v = decodeURIComponent(nv[1]);
-                
+
                 if (!parms.hasOwnProperty(n)) parms[n] = [];
                 parms[n].push(nv.length === 2 ? v : null);
             }
@@ -134,10 +175,12 @@
         }
     </script>
 </head>
+
 <body>
-    <canvas id="myCanvas" onmousemove="MP(event)" width="1280" height="720"></canvas>
+    <canvas id="myCanvas" onmousemove="MP(event)" width="5000" height="5000"></canvas>
     <script>
         myCanvas = document.getElementById("myCanvas");
     </script>
 </body>
+
 </html>
