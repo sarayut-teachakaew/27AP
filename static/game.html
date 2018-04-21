@@ -16,11 +16,15 @@
     <script>
         var socket = io();
         var myCanvas;
+        var getPara = parseURLParams(document.URL);
         var keys= [];
-        let ply = new Player(0,0,new Date().getMilliseconds());
+        var name=getPara.name;
+        console.log("NAME : "+name);
+        let ply = new Player(name,0,0,new Date().getMilliseconds());
+        ply.visible=true;
         var players = {};
         players[ply.id]=ply;
-        socket.emit('player connect',{x:ply.x, y:ply.y, id:ply.id , name:ply.name});
+        socket.emit('player connect',{id:ply.id , name:ply.name});
     
         document.addEventListener('keydown', (event) => {
             keys[event.keyCode]=true;
@@ -29,9 +33,17 @@
             keys[event.keyCode]=false;
         })
         
+        socket.on('load game', function(data){
+            console.log("Loading...");
+            //console.log(data.player);
+            data.player.forEach(play => {
+                players[play.id] = new Player(play.name,0,0,play.id);
+            });
+            console.log("COMPELTE");
+        });
         socket.on('player connect', function(play){
             if(play.id == ply.id)return;
-            players[play.id] = new Player(play.x,play.y,play.id);
+            players[play.id] = new Player(play.name,0,0,play.id);
         });
         socket.on('player disconnect', function(id){
             delete players[id];
@@ -42,8 +54,9 @@
             if(data.player.id != ply.id){
                 players[data.player.id].x = data.player.x;
                 players[data.player.id].y = data.player.y;
+                players[data.player.id].visible = true;
             }return;}
-            players[data.player.id] = new Player(data.player.x,data.player.y,data.player.id);
+            //players[data.player.id] = new Player('',data.player.x,data.player.y,data.player.id);
         });
 
         function update(){
@@ -62,6 +75,26 @@
             }
         }
         setInterval(update, 33);
+
+        function parseURLParams(url) {
+            var queryStart = url.indexOf("?") + 1,
+            queryEnd   = url.indexOf("#") + 1 || url.length + 1,
+            query = url.slice(queryStart, queryEnd - 1),
+            pairs = query.replace(/\+/g, " ").split("&"),
+            parms = {}, i, n, v, nv;
+
+            if (query === url || query === "") return;
+
+            for (i = 0; i < pairs.length; i++) {
+                nv = pairs[i].split("=", 2);
+                n = decodeURIComponent(nv[0]);
+                v = decodeURIComponent(nv[1]);
+                
+                if (!parms.hasOwnProperty(n)) parms[n] = [];
+                parms[n].push(nv.length === 2 ? v : null);
+            }
+            return parms;
+        }
     </script>
 </head>
 <body>

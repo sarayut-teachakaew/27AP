@@ -6,24 +6,31 @@ var io = require('socket.io')(http);
 app.use(express.static(__dirname + '/static'));
 
 app.get('/', function(req, res){
-  res.sendfile('game.html');
+  res.sendfile('index.html');
 });
 
 var clientsCount = 0;
-var players = {};
+var players = [];
 io.on('connection', function(socket){
     var id=0;
     clientsCount++;
     console.log(clientsCount + ' clients connected!');
 
     socket.on('player connect', function(play){
+      //console.log("sending");
+      //console.log(players);
+      socket.emit('load game',{player:players});
       id=play.id;
+      players.push(play);
       io.emit('player connect', play);
     });
 
     socket.on('disconnect', function(){
         clientsCount--;
         console.log(clientsCount + ' clients connected!');
+  
+        for(var i=0;i<players.length;i++)if(players[i].id==id)players.splice(i, 1);
+
         io.emit('player disconnect', id);
     });
 
