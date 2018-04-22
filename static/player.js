@@ -7,7 +7,7 @@ class Player {
         this.id = id;
         this.lvl = 0;
         this.size = 60;
-        this.r = this.size*0.8;
+        this.r = this.size * 0.8;
         this.x = xPos;
         this.y = yPos;
         this.mX = this.x;
@@ -36,8 +36,29 @@ class Player {
         this.fy += fy;
     }
     update() {
-        this.x += this.fx;
-        this.y += this.fy;
+        var frad = Math.atan2(this.fy, this.fx);
+        var dist = Math.sqrt(this.fx * this.fx + this.fy * this.fy);
+        for (var i = 0; i < numberPolyY; i++) {
+            for (var j = 0; j < numberPolyX; j++) {
+                if (!polygonArray[i][j].filled) continue;
+                if (Math.sqrt((polygonArray[i][j].x - this.x) * (polygonArray[i][j].x - this.x)
+                    + (polygonArray[i][j].y - this.y) * (polygonArray[i][j].y - this.y)) > polySize * 2) continue;
+                for (var k = 0; k < numberOfSides; k++) {
+                    while (dist > 0 && circleDistFromLineSeg({ x: this.x + dist * Math.cos(frad), y: this.y + dist * Math.sin(frad) }
+                        , { p1: polygonArray[i][j].p[k], p2: polygonArray[i][j].p[k + 1] }) < this.r / 2) {
+                        var rrad = Math.atan2(polygonArray[i][j].y - this.y, polygonArray[i][j].x - this.x);
+                        this.x -= Math.cos(rrad);
+                        this.y -= Math.sin(rrad);
+                        dist -= 0.5;
+                        if (dist <= 0) {
+                            dist = 0; break;
+                        }
+                    }
+                }
+            }
+        }
+        this.x += dist * Math.cos(frad);
+        this.y += dist * Math.sin(frad);
         this.fx = 0;
         this.fy = 0;
 
@@ -47,6 +68,7 @@ class Player {
     }
     draw(canvas) {
         if (!this.visible) return;
+
         var ctx = canvas.getContext("2d");
 
         ctx.save();
@@ -59,17 +81,17 @@ class Player {
         else {
             ctx.fillStyle = '#C0C0C0';
             ctx.beginPath();
-            ctx.moveTo(0, -this.size / 2);
-            ctx.lineTo(0, this.size / 3);
-            ctx.lineTo(0 - this.size / 1.8, this.size / 1.5);
+            ctx.moveTo(0, -this.size / 2 - this.size / 5);
+            ctx.lineTo(0, this.size / 3 - this.size / 5);
+            ctx.lineTo(0 - this.size / 1.8, this.size / 1.5 - this.size / 5);
             ctx.closePath();
             ctx.fill();
 
             ctx.fillStyle = '#808080';
             ctx.beginPath();
-            ctx.moveTo(0, -this.size / 2);
-            ctx.lineTo(0, this.size / 3);
-            ctx.lineTo(this.size / 1.8, this.size / 1.5);
+            ctx.moveTo(0, -this.size / 2 - this.size / 5);
+            ctx.lineTo(0, this.size / 3 - this.size / 5);
+            ctx.lineTo(this.size / 1.8, this.size / 1.5 - this.size / 5);
             ctx.closePath();
             ctx.fill();
         }
@@ -85,20 +107,20 @@ class Player {
         if (!this.visible) return;
         var ctx = canvas.getContext("2d");
 
-        var wp = this.hp*0.1, hi = 6, fs = 20;
+        var wp = this.hp * 0.1, hi = 6, fs = 20;
         ctx.fillStyle = '#DC143C';
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(this.x+wp, this.y + this.size+fs/3);
-        ctx.lineTo(this.x-wp, this.y + this.size+fs/3);
-        ctx.lineTo(this.x-wp, this.y + hi + this.size+fs/3);
-        ctx.lineTo(this.x+wp, this.y + hi + this.size+fs/3);
+        ctx.moveTo(this.x + wp, this.y + this.size + fs / 3);
+        ctx.lineTo(this.x - wp, this.y + this.size + fs / 3);
+        ctx.lineTo(this.x - wp, this.y + hi + this.size + fs / 3);
+        ctx.lineTo(this.x + wp, this.y + hi + this.size + fs / 3);
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
 
-        ctx.font = "bold "+fs+"px Arial";
+        ctx.font = "bold " + fs + "px Arial";
         //canvas.style.letterSpacing = '2px';
         ctx.textAlign = "center";
         ctx.strokeStyle = 'black';

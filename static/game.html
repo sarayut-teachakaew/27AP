@@ -25,33 +25,19 @@
         var keys = [];
         var name = '';
         var skin = '';
+        var seed = 1;
+        var mapLoad = false;
+        var vision = 1280;
+        var panX = 0, panY = 0;
 
-        //START create polygon
-        var numberPolyY = 43;
-        var numberPolyX = 50; //soft code
-        //create 2D array  
-        var polygonArray = [numberPolyY];
-        for (i = 0; i < numberPolyX; i ++) {
-            polygonArray[i] = [];
-        }
+        var numberOfSides = 6; //hexagon
+        var numberPolyY;
+        var numberPolyX;
+        var polygonArray;
         var polyPosX = 0;
         var polyPosY = 100;
         var polySize = 70;
-        for (i = 0; i < numberPolyY; i++) {
-            for (j = 0; j < numberPolyX; j++) {
-                if (j % 2 == 0) {
-                    polygonArray[i][j] = new Polygon(polyPosX, polyPosY - 60, polySize, Math.floor(Math.random() * 6));
-                }
-                else {
-                    polygonArray[i][j] = new Polygon(polyPosX, polyPosY, polySize, Math.floor(Math.random() * 6));
-                }
-                polyPosX += 105;
-            }
-            polyPosX = 0;
-            polyPosY += 120;
-        }
-        //END create polygon
-      
+
         if (getPara.name) name = getPara.name;
         if (getPara.skin) {
             skin = getPara.skin;
@@ -64,28 +50,63 @@
         var bullHit = {};
 
         var id = 0;
-      
+
         var cidGen = 0;
-        var maxHp = 100,pHealth=0,hpStep=20;
+        var maxHp = 100, pHealth = 0, hpStep = 20;
         var pointH = 0; upPH();
         var exp = 0;
+        var spawnP = [];
+        var coins = [];
 
         var players = {};
         var ply;
-        socket.on('user id', function (idBase) {
-            id = idBase;
+        socket.on('user id', function (data) {
+            id = data.id;
+            seed = data.seed;
             console.log("ID : " + id);
             console.log("NAME : " + name);
             console.log("SKIN : " + skin);
-            ply = new Player(name, 0, 0, id, skin);
+
+            //START create polygon
+            numberPolyY = 40;
+            numberPolyX = 40; //soft code
+            //create 2D array  
+            polygonArray = [numberPolyY];
+            for (i = 0; i < numberPolyX; i++) {
+                polygonArray[i] = [];
+            }
+            for (i = 0; i < numberPolyY; i++) {
+                for (j = 0; j < numberPolyX; j++) {
+                    var filled;
+                    if (i == 0 || j == 0 || i == numberPolyY - 1 || j == numberPolyX - 1) filled = true;
+                    else filled = Math.floor(random() * 6) == 0;
+
+                    if (j % 2 == 0) {
+                        if (!filled) spawnP.push({ x: polyPosX, y: polyPosY - 60 });
+                        polygonArray[i][j] = new Polygon(polyPosX, polyPosY - 60, polySize, filled);
+                    }
+                    else {
+                        if (!filled) spawnP.push({ x: polyPosX, y: polyPosY });
+                        polygonArray[i][j] = new Polygon(polyPosX, polyPosY, polySize, filled);
+                    }
+                    polyPosX += 105;
+                }
+                polyPosX = 0;
+                polyPosY += 120;
+            }
+            mapLoad = true;
+            //END create polygon
+
+            var sp = Math.floor((spawnP.length * Math.random()) % spawnP.length);
+            ply = new Player(name, spawnP[sp].x, spawnP[sp].y, id, skin);
             ply.visible = true;
             players[ply.id] = ply;
             socket.emit('player connect', { id: ply.id, name: ply.name, skin: ply.skin });
 
-            getPoint(100);
+            getPoint(10);
             ply.lvl = 0;
         });
-      
+
 
         document.addEventListener('keydown', (event) => {
             keys[event.keyCode] = true;
@@ -168,12 +189,13 @@
         })
 
         socket.on('load game', function (data) {
-            console.log("Loading...");
             //console.log(data.player);
             data.player.forEach(play => {
                 players[play.id] = new Player(play.name, 0, 0, play.id, play.skin);
             });
-            console.log("COMPELTE");
+        });
+        socket.on('load coin', function (cs) {
+            coins = cs;
         });
         socket.on('player connect', function (play) {
             if (play.id == ply.id) return;
@@ -201,9 +223,19 @@
             }
         });
         socket.on('pass score', function (data) {
-            if(ply.id!=data.id)return;
-            var ex = Math.max(0,data.lvl-ply.lvl);
-            exp += 100+ex*10;
+            if (ply.id != data.id) return;
+            var ex = Math.max(0, data.lvl - ply.lvl);
+            exp += 150 + ex * 10;
+        });
+        socket.on('spawn coin', function (c) {
+            coins.push(c);
+        });
+        socket.on('get coin', function (c) {
+            for (var i = 0; i < coins.length; i++)if (coins[i].id == c.cId) {
+                coins.splice(i, 1);
+                break;
+            }
+            if (c.pId == ply.id) exp += c.exp;
         });
 
         socket.on('player data', function (player) {
@@ -222,17 +254,22 @@
         function update() {
             if (id == 0) return;
 
+            if (id > 0 && gmp) {
+                ply.mX = gmp.x + panX;
+                ply.mY = gmp.y + panY;
+            }
+
             if (keys[87]) ply.push(0, -guns[gunSelect].speed);//W
             if (keys[83]) ply.push(0, guns[gunSelect].speed);//S
             if (keys[65]) ply.push(-guns[gunSelect].speed, 0);//A
             if (keys[68]) ply.push(guns[gunSelect].speed, 0);//D
 
-            while(exp>=100){
-                exp-=100;
+            while (exp >= 100) {
+                exp -= 100;
                 getPoint();
             }
 
-            if (ply.hp < 0)die();
+            if (ply.hp < 0) die();
             ply.hp += maxHp / 5000 + guns[gunSelect].pSpeed / 150;
             if (ply.hp > maxHp) ply.hp = maxHp;
             //console.log(ply.hp);
@@ -244,33 +281,64 @@
 
             socket.emit('player data', { x: ply.x, y: ply.y, rad: ply.rad, hp: ply.hp, id: ply.id });
 
-            for(var b in bullHit){
+            for (var b in bullHit) {
                 bullHit[b]--;
-                if(bullHit[b]==0)delete bullHit[b];
+                if (bullHit[b] == 0) delete bullHit[b];
             }
 
-            for (var i = 0; i < myBull.length; i++)for (var j = 0; j < bullets.length; j++) {
-                if (Math.sqrt((bullets[j].x - myBull[i].x) * (bullets[j].x - myBull[i].x)
-                    + (bullets[j].y - myBull[i].y) * (bullets[j].y - myBull[i].y)) > myBull[i].r + bullets[j].r
-                    + Math.sqrt(myBull[i].sx * myBull[i].sx + myBull[i].sy * myBull[i].sy)) continue;
+            for (var i = 0; i < coins.length; i++) {
+                if (Math.sqrt((coins[i].x - ply.x) * (coins[i].x - ply.x)
+                    + (coins[i].y - ply.y) * (coins[i].y - ply.y)) < ply.r + coins[i].value / 5)
+                    socket.emit('get coin', { pId: ply.id, cId: coins[i].id });
+            }
+            myBL: for (var i = 0; i < myBull.length; i++) {
+                for (var j = 0; j < bullets.length; j++) {
+                    if (Math.sqrt((bullets[j].x - myBull[i].x) * (bullets[j].x - myBull[i].x)
+                        + (bullets[j].y - myBull[i].y) * (bullets[j].y - myBull[i].y)) > myBull[i].r + bullets[j].r
+                        + Math.sqrt(myBull[i].sx * myBull[i].sx + myBull[i].sy * myBull[i].sy)) continue;
 
-                if (circleDistFromLineSeg({ x: bullets[j].x, y: bullets[j].y }, {
-                    p1: { x: myBull[i].x, y: myBull[i].y }
-                    , p2: { x: myBull[i].x + myBull[i].sx, y: myBull[i].y + myBull[i].sy }
-                }) <= myBull[i].r + bullets[j].r) {
-                    if (myBull[i].hardness >= bullets[j].hardness) {
-                        myBull[i].hardness -= bullets[j].hardness;
-                        bullets[j].hardness = 0;
-                    } else {
-                        bullets[j].hardness -= myBull[i].hardness;
-                        myBull[i].hardness = 0;
+                    if (circleDistFromLineSeg({ x: bullets[j].x, y: bullets[j].y }, {
+                        p1: { x: myBull[i].x, y: myBull[i].y }
+                        , p2: { x: myBull[i].x + myBull[i].sx, y: myBull[i].y + myBull[i].sy }
+                    }) <= myBull[i].r + bullets[j].r) {
+                        if (myBull[i].hardness >= bullets[j].hardness) {
+                            myBull[i].hardness -= bullets[j].hardness;
+                            bullets[j].hardness = 0;
+                        } else {
+                            bullets[j].hardness -= myBull[i].hardness;
+                            myBull[i].hardness = 0;
+                        }
+                        socket.emit('hit bullet', { id: myBull[i].id, cid: myBull[i].cid, hdn: myBull[i].hardness });
+                        //socket.emit('hit bullet', {id:bullets[j].id,cid:bullets[j].cid,hdn:bullets[j].hardness});
                     }
-                    socket.emit('hit bullet', { id: myBull[i].id, cid: myBull[i].cid, hdn: myBull[i].hardness });
-                    //socket.emit('hit bullet', {id:bullets[j].id,cid:bullets[j].cid,hdn:bullets[j].hardness});
+                }
+                for (var l = 0; l < numberPolyY; l++) {
+                    for (var j = 0; j < numberPolyX; j++) {
+                        if (!polygonArray[l][j].filled) continue;
+                        if (Math.sqrt((polygonArray[l][j].x - myBull[i].x) * (polygonArray[l][j].x - myBull[i].x)
+                            + (polygonArray[l][j].y - myBull[i].y) * (polygonArray[l][j].y - myBull[i].y)) > polySize * 2) continue;
+
+                        if (circleDistFromLineSeg({ x: polygonArray[l][j].x, y: polygonArray[l][j].y }, {
+                            p1: { x: myBull[i].x, y: myBull[i].y }
+                            , p2: { x: myBull[i].x + myBull[i].sx, y: myBull[i].y + myBull[i].sy }
+                        }) < 53) {
+                            myBull[i].hardness = 0;
+                            socket.emit('hit bullet', { id: myBull[i].id, cid: myBull[i].cid, hdn: myBull[i].hardness });
+                            continue myBL;
+                        }
+                        for (var k = 0; k < numberOfSides; k++) {
+                            if (circleDistFromLineSeg({ x: myBull[i].x, y: myBull[i].y }
+                                , { p1: polygonArray[l][j].p[k], p2: polygonArray[l][j].p[k + 1] }) <= myBull[i].r) {
+                                myBull[i].hardness = 0;
+                                socket.emit('hit bullet', { id: myBull[i].id, cid: myBull[i].cid, hdn: myBull[i].hardness });
+                                continue myBL;
+                            }
+                        }
+                    }
                 }
             }
             for (var j = 0; j < bullets.length; j++) {
-                if(bullHit[bullets[j]])continue;
+                if (bullHit[bullets[j]]) continue;
                 if (Math.sqrt((bullets[j].x - ply.x) * (bullets[j].x - ply.x)
                     + (bullets[j].y - ply.y) * (bullets[j].y - ply.y)) > ply.r + bullets[j].r
                     + Math.sqrt(bullets[j].sx * bullets[j].sx + bullets[j].sy * bullets[j].sy)) continue;
@@ -279,15 +347,15 @@
                     p1: { x: bullets[j].x, y: bullets[j].y }
                     , p2: { x: bullets[j].x + bullets[j].sx, y: bullets[j].y + bullets[j].sy }
                 }) <= ply.r + bullets[j].r) {
-                    bullHit[bullets[j]]=60;
+                    bullHit[bullets[j]] = 60;
                     ply.hp -= bullets[j].dmg;
-                    bullets[j].hardness -= bullets[j].dmg+50;
+                    bullets[j].hardness -= bullets[j].dmg + 50;
                     if (bullets[j].hardness < 0) bullets[j].hardness = 0;
                     socket.emit('hit bullet', { id: bullets[j].id, cid: bullets[j].cid, hdn: bullets[j].hardness });
 
                     if (ply.hp < 0) {
                         ply.hp = 0;
-                        socket.emit('pass score', {id: bullets[j].id,lvl: ply.lvl});
+                        socket.emit('pass score', { id: bullets[j].id, lvl: ply.lvl });
                         die();
                     }
                 }
@@ -295,35 +363,65 @@
 
             myCanvas.width = window.innerWidth;
             myCanvas.height = window.innerHeight;
+            var pX = (ply.x + ply.mX) / 2 - myCanvas.width / 2;
+            var pY = (ply.y + ply.mY) / 2 - myCanvas.height / 2;
+            panX += (pX - panX) / 4;
+            panY += (pY - panY) / 4;
             draw();
         }
         setInterval(update, 17);
 
         function draw() {
-          
+            if (!mapLoad) return;
+
+            var ctx = myCanvas.getContext("2d");
+            ctx.save();
+            ctx.translate(-panX, -panY);
+
             //START draw polygon
             for (i = 0; i < numberPolyY; i++) {
                 for (j = 0; j < numberPolyX; j++) {
-                    polygonArray[i][j].draw(myCanvas);
+                    if (Math.sqrt((polygonArray[i][j].x - ply.x) * (polygonArray[i][j].x - ply.x)
+                        + (polygonArray[i][j].y - ply.y) * (polygonArray[i][j].y - ply.y)) < vision)
+                        polygonArray[i][j].draw(myCanvas);
                 }
             }
             //END draw polygon
-          
+
+            for (var i = 0; i < coins.length; i++) {
+                if (coins[i].value < 150) coins[i].value += 0.005;
+
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(coins[i].x, coins[i].y, 10 + coins[i].value / 5, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+
             for (var i = 0; i < bullets.length; i++)
-                bullets[i].draw(myCanvas);
+                if (Math.sqrt((bullets[i].x - ply.x) * (bullets[i].x - ply.x)
+                    + (bullets[i].y - ply.y) * (bullets[i].y - ply.y)) < vision)
+                    bullets[i].draw(myCanvas, "#FF8C00");
 
             for (var i = 0; i < myBull.length; i++)
-                myBull[i].draw(myCanvas);
+                if (Math.sqrt((myBull[i].x - ply.x) * (myBull[i].x - ply.x)
+                    + (myBull[i].y - ply.y) * (myBull[i].y - ply.y)) < vision)
+                    myBull[i].draw(myCanvas, "#00BFFF");
 
             for (var key in players)
-                players[key].draw(myCanvas);
+                if (Math.sqrt((players[key].x - ply.x) * (players[key].x - ply.x)
+                    + (players[key].y - ply.y) * (players[key].y - ply.y)) < vision)
+                    players[key].draw(myCanvas);
 
             for (var key in players)
-                players[key].drawText(myCanvas);
+                if (Math.sqrt((players[key].x - ply.x) * (players[key].x - ply.x)
+                    + (players[key].y - ply.y) * (players[key].y - ply.y)) < vision)
+                    players[key].drawText(myCanvas);
 
-            var ctx = myCanvas.getContext("2d");
+            ctx.restore();
 
-            ctx.font = "20px Arial";
+            // Start NonPan
+
+            ctx.font = "16px Arial";
             ctx.textAlign = "left";
             ctx.fillStyle = '#778899';
             var tx = 10, ty = 20;
@@ -333,26 +431,33 @@
                 , (keys[66] ? "C- " : (guns[gunSelect].point > 0 ? "C+ " : "")) + "[" + guns[gunSelect].pAccurate + "]Accurate"
                 , (keys[66] ? "V- " : (guns[gunSelect].point > 0 ? "V+ " : "")) + "[" + guns[gunSelect].pSpeed + "]Speed"
                 , (keys[66] ? "F- " : (guns[gunSelect].point > 0 ? "F+ " : "")) + "[" + guns[gunSelect].pFireRate + "]FireRate"
-                , (pointH > 0 ? "R+ " : "") + "[" + pHealth + "]Health"+(pointH > 0 ? "("+pointH+")" : "")
-                , guns[gunSelect].point>0? ("  " + guns[gunSelect].point + " point"):""
-                ,"SCORE : "+(ply.lvl*100+exp)];
+                , (pointH > 0 ? "R+ " : "") + "[" + pHealth + "]Health" + (pointH > 0 ? "(" + pointH + ")" : "")
+                , guns[gunSelect].point > 0 ? ("  " + guns[gunSelect].point + " point") : ""
+                , "SCORE : " + (ply.lvl * 100 + exp)];
             for (var i = 0; i < text.length; i++)
-                ctx.fillText(text[i], tx, ty + i * 22);
+                ctx.fillText(text[i], tx, ty + i * 17);
+
+            // End NonPan
+
+            ctx.save();
+            ctx.translate(-panX, -panY);
 
             if (gmp) {
                 var wi = 30, hi = 6;
-                ctx.fillStyle = '#FFD700';
+                ctx.fillStyle = '#4682B4';
                 ctx.strokeStyle = 'white';
                 ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.moveTo(gmp.x, gmp.y);
-                ctx.lineTo(gmp.x - wi * guns[gunSelect].cooldown / 1000, gmp.y);
-                ctx.lineTo(gmp.x - wi * guns[gunSelect].cooldown / 1000, gmp.y + hi);
-                ctx.lineTo(gmp.x, gmp.y + hi);
+                ctx.moveTo(ply.mX, ply.mY);
+                ctx.lineTo(ply.mX - wi * guns[gunSelect].cooldown / 1000, ply.mY);
+                ctx.lineTo(ply.mX - wi * guns[gunSelect].cooldown / 1000, ply.mY + hi);
+                ctx.lineTo(ply.mX, ply.mY + hi);
                 ctx.closePath();
                 ctx.fill();
                 ctx.stroke();
             }
+
+            ctx.restore();
 
         }
 
@@ -376,27 +481,21 @@
             if (!n) n = 1;
             for (var i = 0; i < guns.length; i++)
                 guns[i].point += n;
-            ply.lvl+=n;
+            ply.lvl += n;
             upPH();
         }
         function upPH() {
             pointH = guns[0].point;
             for (var i = 1; i < guns.length; i++)
-                if (pointH > guns[i].point) pointH = pointHguns[i].point;
+                if (pointH > guns[i].point) pointH = guns[i].point;
         }
 
-        function die(){
+        function die() {
             location.reload();
         }
 
         function mouseMove(evt) {
-
             gmp = getMousePos(myCanvas, evt);
-
-            if (id > 0) {
-                ply.mX = gmp.x;
-                ply.mY = gmp.y;
-            }
         }
         function mouseDown(evt) {
             guns[gunSelect].onFire = true;
@@ -411,6 +510,11 @@
                 x: evt.clientX - rect.left,
                 y: evt.clientY - rect.top
             };
+        }
+
+        function random() {
+            var x = Math.sin(seed++) * 10000;
+            return x - Math.floor(x);
         }
 
         function circleDistFromLineSeg(circle, line) {

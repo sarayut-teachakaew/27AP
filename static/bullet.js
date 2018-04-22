@@ -1,7 +1,7 @@
 var sizeMax = 100;
 var sizeMin = 4;
 class Bullet {
-    constructor(id,cid,dmg, x, y, sx, sy, hardness, delTime, bullets) {
+    constructor(id, cid, dmg, x, y, sx, sy, hardness, delTime, bullets) {
         this.cid = cid;
         this.id = id;
         this.dmg = dmg;
@@ -24,9 +24,9 @@ class Bullet {
             delete (this);
         }
     }
-    draw(canvas) {
+    draw(canvas, clr) {
         var ctx = canvas.getContext("2d");
-        ctx.fillStyle = 'black';
+        ctx.fillStyle = clr;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.r, 0, 2 * Math.PI);
         ctx.fill();
