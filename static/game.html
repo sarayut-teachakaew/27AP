@@ -15,6 +15,7 @@
     </style>
     <script src="/socket.io/socket.io.js"></script>
     <script src="player.js"></script>
+    <script src="polygon.js"></script>
     <script src="gun.js"></script>
     <script src="bullet.js"></script>
     <script>
@@ -25,6 +26,32 @@
         var name = '';
         var skin = '';
 
+        //START create polygon
+        var numberPolyY = 43;
+        var numberPolyX = 50; //soft code
+        //create 2D array  
+        var polygonArray = [numberPolyY];
+        for (i = 0; i < numberPolyX; i ++) {
+            polygonArray[i] = [];
+        }
+        var polyPosX = 0;
+        var polyPosY = 100;
+        var polySize = 70;
+        for (i = 0; i < numberPolyY; i++) {
+            for (j = 0; j < numberPolyX; j++) {
+                if (j % 2 == 0) {
+                    polygonArray[i][j] = new Polygon(polyPosX, polyPosY - 60, polySize, Math.floor(Math.random() * 6));
+                }
+                else {
+                    polygonArray[i][j] = new Polygon(polyPosX, polyPosY, polySize, Math.floor(Math.random() * 6));
+                }
+                polyPosX += 105;
+            }
+            polyPosX = 0;
+            polyPosY += 120;
+        }
+        //END create polygon
+      
         if (getPara.name) name = getPara.name;
         if (getPara.skin) {
             skin = getPara.skin;
@@ -37,10 +64,12 @@
         var bullHit = {};
 
         var id = 0;
+      
         var cidGen = 0;
         var maxHp = 100,pHealth=0,hpStep=20;
         var pointH = 0; upPH();
         var exp = 0;
+
         var players = {};
         var ply;
         socket.on('user id', function (idBase) {
@@ -56,7 +85,7 @@
             getPoint(100);
             ply.lvl = 0;
         });
-
+      
 
         document.addEventListener('keydown', (event) => {
             keys[event.keyCode] = true;
@@ -132,6 +161,7 @@
                 guns[gunSelect].upGrade();
                 upPH();
             }
+
         })
         document.addEventListener('keyup', (event) => {
             keys[event.keyCode] = false;
@@ -270,6 +300,15 @@
         setInterval(update, 17);
 
         function draw() {
+          
+            //START draw polygon
+            for (i = 0; i < numberPolyY; i++) {
+                for (j = 0; j < numberPolyX; j++) {
+                    polygonArray[i][j].draw(myCanvas);
+                }
+            }
+            //END draw polygon
+          
             for (var i = 0; i < bullets.length; i++)
                 bullets[i].draw(myCanvas);
 
@@ -314,6 +353,7 @@
                 ctx.fill();
                 ctx.stroke();
             }
+
         }
 
         function spawnPlayerBullet() {
