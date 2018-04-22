@@ -42,7 +42,7 @@ for (var i = 0; i < numberPolyY; i++) {
 setInterval(update, 1000);
 function update() {
   if (spawnP.length > 0) {
-    for (var i = 0; i < players.length; i++)if (Math.random() <= 0.3) {
+    for (var i = 0; i < players.length; i++)if (Math.random() <= 0.24) {
       var sp = Math.floor((spawnP.length * Math.random()) % spawnP.length);
       coins.push({ id: spawnP[sp].id, x: spawnP[sp].x, y: spawnP[sp].y, value: 10 });
       io.emit('spawn coin', { id: spawnP[sp].id, x: spawnP[sp].x, y: spawnP[sp].y, value: 10 });
@@ -56,7 +56,7 @@ function update2() {
 }
 
 io.on('connection', function (socket) {
-  var id = 0;
+  var id = 0,name='';
   idBase++;
   socket.emit('user id', { id: idBase, seed: seedBase });
   socket.on('player connect', function (play) {
@@ -65,14 +65,15 @@ io.on('connection', function (socket) {
     socket.emit('load game', { player: players });
     socket.emit('load coin', coins);
     id = play.id;
+    name = play.name;
     players.push(play);
     io.emit('player connect', play);
-    console.log("Total Player :" + players.length);
+    console.log(name+" has Connected(total:" + players.length+")");
   });
 
   socket.on('disconnect', function () {
     for (var i = 0; i < players.length; i++)if (players[i].id == id) players.splice(i, 1);
-    console.log("Total Player :" + players.length);
+    console.log(name+" has Disconnected(total:" + players.length+")");
 
     io.emit('player disconnect', id);
   });
