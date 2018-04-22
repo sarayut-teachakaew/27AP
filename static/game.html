@@ -1,124 +1,411 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>27AP</title>
     <style>
         canvas {
-            position:fixed;
+            position: fixed;
             font-weight: bold;
-            left:0;
-            top:0;
-            width:100%;
-            height:100%;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
         }
     </style>
     <script src="/socket.io/socket.io.js"></script>
     <script src="player.js"></script>
+    <script src="gun.js"></script>
+    <script src="bullet.js"></script>
     <script>
         var socket = io();
-        var myCanvas;
+        var myCanvas, gmp;
         var getPara = parseURLParams(document.URL);
-        var keys= [];
-        var name='';
-        var skin='';
+        var keys = [];
+        var name = '';
+        var skin = '';
 
-        if(getPara.name)name=getPara.name;
-        if(getPara.skin){
-            skin=getPara.skin;
-            if(typeof skin != "string")skin=skin[0];
+        if (getPara.name) name = getPara.name;
+        if (getPara.skin) {
+            skin = getPara.skin;
+            if (typeof skin != "string") skin = skin[0];
         }
+        var guns = [new Gun(spawnPlayerBullet), new Gun(spawnPlayerBullet), new Gun(spawnPlayerBullet), new Gun(spawnPlayerBullet)];
+        var gunSelect = 0;
+        var bullets = [];
+        var myBull = [];
+        var bullHit = {};
 
-        var id=0;
+        var id = 0;
+        var cidGen = 0;
+        var maxHp = 100,pHealth=0,hpStep=20;
+        var pointH = 0; upPH();
+        var exp = 0;
         var players = {};
         var ply;
-        socket.on('user id', function(idBase){
-            id=idBase;
-            console.log("ID : "+id);
-            console.log("NAME : "+name);
-            console.log("SKIN : "+skin);
-            ply = new Player(name,0,0,id,skin);
-            ply.visible=true;
-            players[ply.id]=ply;
-            socket.emit('player connect',{id:ply.id , name:ply.name,skin:ply.skin});
+        socket.on('user id', function (idBase) {
+            id = idBase;
+            console.log("ID : " + id);
+            console.log("NAME : " + name);
+            console.log("SKIN : " + skin);
+            ply = new Player(name, 0, 0, id, skin);
+            ply.visible = true;
+            players[ply.id] = ply;
+            socket.emit('player connect', { id: ply.id, name: ply.name, skin: ply.skin });
+
+            getPoint(100);
+            ply.lvl = 0;
         });
-    
+
+
         document.addEventListener('keydown', (event) => {
-            keys[event.keyCode]=true;
+            keys[event.keyCode] = true;
+            if (49 <= event.keyCode && event.keyCode <= 52 && gunSelect != event.keyCode - 49) {
+                var a = guns[gunSelect].onFire;
+                guns[gunSelect].onFire = false;
+                gunSelect = event.keyCode - 49;
+                guns[gunSelect].equip();
+                guns[gunSelect].onFire = a
+            }
+            if ([90, 88, 67, 86, 70, 82].includes(event.keyCode)) {
+                switch (event.keyCode) {
+                    case 90: // Z
+                        if (!keys[66] && guns[gunSelect].point > 0) {
+                            guns[gunSelect].pHardness++;
+                            guns[gunSelect].point--;
+                        }
+                        else if (keys[66] && guns[gunSelect].pHardness > 0) {
+                            guns[gunSelect].pHardness--;
+                            guns[gunSelect].point++;
+                        }
+                        break;
+                    case 88: // X
+                        if (!keys[66] && guns[gunSelect].point > 0) {
+                            guns[gunSelect].pDamage++;
+                            guns[gunSelect].point--;
+                        }
+                        else if (keys[66] && guns[gunSelect].pDamage > 0) {
+                            guns[gunSelect].pDamage--;
+                            guns[gunSelect].point++;
+                        }
+                        break;
+                    case 67: // C
+                        if (!keys[66] && guns[gunSelect].point > 0) {
+                            guns[gunSelect].pAccurate++;
+                            guns[gunSelect].point--;
+                        }
+                        else if (keys[66] && guns[gunSelect].pAccurate > 0) {
+                            guns[gunSelect].pAccurate--;
+                            guns[gunSelect].point++;
+                        }
+                        break;
+                    case 86: // V
+                        if (!keys[66] && guns[gunSelect].point > 0) {
+                            guns[gunSelect].pSpeed++;
+                            guns[gunSelect].point--;
+                        }
+                        else if (keys[66] && guns[gunSelect].pSpeed > 0) {
+                            guns[gunSelect].pSpeed--;
+                            guns[gunSelect].point++;
+                        }
+                        break;
+                    case 70: // F
+                        if (!keys[66] && guns[gunSelect].point > 0) {
+                            guns[gunSelect].pFireRate++;
+                            guns[gunSelect].point--;
+                        }
+                        else if (keys[66] && guns[gunSelect].pFireRate > 0) {
+                            guns[gunSelect].pFireRate--;
+                            guns[gunSelect].point++;
+                        }
+                        break;
+                    case 82: // R
+                        if (pointH > 0) {
+                            for (var i = 0; i < guns.length; i++)
+                                guns[i].point--;
+                            pHealth++;
+                            maxHp += hpStep;
+                            ply.hp += hpStep;
+                        }
+                        break;
+                }
+                guns[gunSelect].upGrade();
+                upPH();
+            }
         })
         document.addEventListener('keyup', (event) => {
-            keys[event.keyCode]=false;
+            keys[event.keyCode] = false;
         })
-        
-        socket.on('load game', function(data){
+
+        socket.on('load game', function (data) {
             console.log("Loading...");
             //console.log(data.player);
             data.player.forEach(play => {
-                players[play.id] = new Player(play.name,0,0,play.id,play.skin);
+                players[play.id] = new Player(play.name, 0, 0, play.id, play.skin);
             });
             console.log("COMPELTE");
         });
-        socket.on('player connect', function(play){
-            if(play.id == ply.id)return;
-            players[play.id] = new Player(play.name,0,0,play.id,play.skin);
+        socket.on('player connect', function (play) {
+            if (play.id == ply.id) return;
+            players[play.id] = new Player(play.name, 0, 0, play.id, play.skin);
         });
-        socket.on('player disconnect', function(id){
+        socket.on('player disconnect', function (id) {
             delete players[id];
         });
+        socket.on('spawn bullet', function (bull) {
+            if (bull.id != ply.id) {
+                spawnBullet(bull.id, bull.cid, bull.dmg, bull.x, bull.y, bull.sx, bull.sy, bull.hardness, bull.delTime);
+            }
+        });
+        socket.on('hit bullet', function (bull) {
+            //if (bull.id == ply.id) return;
+            for (var i = 0; i < bullets.length; i++) {
+                if (bullets[i].cid == bull.cid && bullets[i].id == bull.id) {
+                    bullets[i].hardness = bull.hdn;
+                }
+            }
+            for (var i = 0; i < myBull.length; i++) {
+                if (myBull[i].cid == bull.cid && myBull[i].id == bull.id) {
+                    myBull[i].hardness = bull.hdn;
+                }
+            }
+        });
+        socket.on('pass score', function (data) {
+            if(ply.id!=data.id)return;
+            var ex = Math.max(0,data.lvl-ply.lvl);
+            exp += 100+ex*10;
+        });
 
-        socket.on('shared data', function(data){
-            if(data.player.id in players){
-            if(data.player.id != ply.id){
-                players[data.player.id].x = data.player.x;
-                players[data.player.id].y = data.player.y;
-                players[data.player.id].rad = data.player.rad;
-                players[data.player.id].visible = true;
-            }return;}
+        socket.on('player data', function (player) {
+            if (player.id in players) {
+                if (player.id != ply.id) {
+                    players[player.id].x = player.x;
+                    players[player.id].y = player.y;
+                    players[player.id].rad = player.rad;
+                    players[player.id].hp = player.hp;
+                    players[player.id].visible = true;
+                } return;
+            }
             //players[data.player.id] = new Player('',data.player.x,data.player.y,data.player.id);
         });
 
-        function update(){
-            if(id==0)return;
-            
-            if(keys[87])ply.push(0,-5);//W
-            if(keys[83])ply.push(0,5);//S
-            if(keys[65])ply.push(-5,0);//A
-            if(keys[68])ply.push(5,0);//D
+        function update() {
+            if (id == 0) return;
+
+            if (keys[87]) ply.push(0, -guns[gunSelect].speed);//W
+            if (keys[83]) ply.push(0, guns[gunSelect].speed);//S
+            if (keys[65]) ply.push(-guns[gunSelect].speed, 0);//A
+            if (keys[68]) ply.push(guns[gunSelect].speed, 0);//D
+
+            while(exp>=100){
+                exp-=100;
+                getPoint();
+            }
+
+            if (ply.hp < 0)die();
+            ply.hp += maxHp / 5000 + guns[gunSelect].pSpeed / 150;
+            if (ply.hp > maxHp) ply.hp = maxHp;
+            //console.log(ply.hp);
+
             ply.update();
-            socket.emit('shared data',{player:{x:ply.x, y:ply.y, rad:ply.rad, id:ply.id}});
+            for (var i = 0; i < guns.length; i++)guns[i].update();
+            for (var i = 0; i < bullets.length; i++)bullets[i].update();
+            for (var i = 0; i < myBull.length; i++)myBull[i].update();
+
+            socket.emit('player data', { x: ply.x, y: ply.y, rad: ply.rad, hp: ply.hp, id: ply.id });
+
+            for(var b in bullHit){
+                bullHit[b]--;
+                if(bullHit[b]==0)delete bullHit[b];
+            }
+
+            for (var i = 0; i < myBull.length; i++)for (var j = 0; j < bullets.length; j++) {
+                if (Math.sqrt((bullets[j].x - myBull[i].x) * (bullets[j].x - myBull[i].x)
+                    + (bullets[j].y - myBull[i].y) * (bullets[j].y - myBull[i].y)) > myBull[i].r + bullets[j].r
+                    + Math.sqrt(myBull[i].sx * myBull[i].sx + myBull[i].sy * myBull[i].sy)) continue;
+
+                if (circleDistFromLineSeg({ x: bullets[j].x, y: bullets[j].y }, {
+                    p1: { x: myBull[i].x, y: myBull[i].y }
+                    , p2: { x: myBull[i].x + myBull[i].sx, y: myBull[i].y + myBull[i].sy }
+                }) <= myBull[i].r + bullets[j].r) {
+                    if (myBull[i].hardness >= bullets[j].hardness) {
+                        myBull[i].hardness -= bullets[j].hardness;
+                        bullets[j].hardness = 0;
+                    } else {
+                        bullets[j].hardness -= myBull[i].hardness;
+                        myBull[i].hardness = 0;
+                    }
+                    socket.emit('hit bullet', { id: myBull[i].id, cid: myBull[i].cid, hdn: myBull[i].hardness });
+                    //socket.emit('hit bullet', {id:bullets[j].id,cid:bullets[j].cid,hdn:bullets[j].hardness});
+                }
+            }
+            for (var j = 0; j < bullets.length; j++) {
+                if(bullHit[bullets[j]])continue;
+                if (Math.sqrt((bullets[j].x - ply.x) * (bullets[j].x - ply.x)
+                    + (bullets[j].y - ply.y) * (bullets[j].y - ply.y)) > ply.r + bullets[j].r
+                    + Math.sqrt(bullets[j].sx * bullets[j].sx + bullets[j].sy * bullets[j].sy)) continue;
+
+                if (circleDistFromLineSeg({ x: ply.x, y: ply.y }, {
+                    p1: { x: bullets[j].x, y: bullets[j].y }
+                    , p2: { x: bullets[j].x + bullets[j].sx, y: bullets[j].y + bullets[j].sy }
+                }) <= ply.r + bullets[j].r) {
+                    bullHit[bullets[j]]=60;
+                    ply.hp -= bullets[j].dmg;
+                    bullets[j].hardness -= bullets[j].dmg+50;
+                    if (bullets[j].hardness < 0) bullets[j].hardness = 0;
+                    socket.emit('hit bullet', { id: bullets[j].id, cid: bullets[j].cid, hdn: bullets[j].hardness });
+
+                    if (ply.hp < 0) {
+                        ply.hp = 0;
+                        socket.emit('pass score', {id: bullets[j].id,lvl: ply.lvl});
+                        die();
+                    }
+                }
+            }
 
             myCanvas.width = window.innerWidth;
             myCanvas.height = window.innerHeight;
+            draw();
+        }
+        setInterval(update, 17);
 
-            for(var key in players){
+        function draw() {
+            for (var i = 0; i < bullets.length; i++)
+                bullets[i].draw(myCanvas);
+
+            for (var i = 0; i < myBull.length; i++)
+                myBull[i].draw(myCanvas);
+
+            for (var key in players)
                 players[key].draw(myCanvas);
-            }
 
-            for(var key in players){
+            for (var key in players)
                 players[key].drawText(myCanvas);
+
+            var ctx = myCanvas.getContext("2d");
+
+            ctx.font = "20px Arial";
+            ctx.textAlign = "left";
+            ctx.fillStyle = '#778899';
+            var tx = 10, ty = 20;
+            var text = ["MODE" + (gunSelect + 1)
+                , (keys[66] ? "Z- " : (guns[gunSelect].point > 0 ? "Z+ " : "")) + "[" + guns[gunSelect].pHardness + "]Hardness"
+                , (keys[66] ? "X- " : (guns[gunSelect].point > 0 ? "X+ " : "")) + "[" + guns[gunSelect].pDamage + "]Damage"
+                , (keys[66] ? "C- " : (guns[gunSelect].point > 0 ? "C+ " : "")) + "[" + guns[gunSelect].pAccurate + "]Accurate"
+                , (keys[66] ? "V- " : (guns[gunSelect].point > 0 ? "V+ " : "")) + "[" + guns[gunSelect].pSpeed + "]Speed"
+                , (keys[66] ? "F- " : (guns[gunSelect].point > 0 ? "F+ " : "")) + "[" + guns[gunSelect].pFireRate + "]FireRate"
+                , (pointH > 0 ? "R+ " : "") + "[" + pHealth + "]Health"+(pointH > 0 ? "("+pointH+")" : "")
+                , guns[gunSelect].point>0? ("  " + guns[gunSelect].point + " point"):""
+                ,"SCORE : "+(ply.lvl*100+exp)];
+            for (var i = 0; i < text.length; i++)
+                ctx.fillText(text[i], tx, ty + i * 22);
+
+            if (gmp) {
+                var wi = 30, hi = 6;
+                ctx.fillStyle = '#FFD700';
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(gmp.x, gmp.y);
+                ctx.lineTo(gmp.x - wi * guns[gunSelect].cooldown / 1000, gmp.y);
+                ctx.lineTo(gmp.x - wi * guns[gunSelect].cooldown / 1000, gmp.y + hi);
+                ctx.lineTo(gmp.x, gmp.y + hi);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
             }
         }
-        setInterval(update, 33);
 
-        function MP(evt) {
-            var gmp=getMousePos(myCanvas, evt);
-            ply.mX = gmp.x;
-            ply.mY = gmp.y;
+        function spawnPlayerBullet() {
+            var sx = guns[gunSelect].bulletSpeed * Math.cos(ply.rad - Math.PI / 2 + guns[gunSelect].aim);
+            var sy = guns[gunSelect].bulletSpeed * Math.sin(ply.rad - Math.PI / 2 + guns[gunSelect].aim);
+            var dm = 30 + guns[gunSelect].pDamage * 5;
+            cidGen++;
+            spawnBullet(id, cidGen, dm, ply.x, ply.y, sx, sy, guns[gunSelect].hardness, guns[gunSelect].delTime);
+            socket.emit('spawn bullet', {
+                id: ply.id, cid: cidGen, dmg: dm
+                , x: ply.x, y: ply.y, sx: sx, sy: sy, hardness: guns[gunSelect].hardness, delTime: guns[gunSelect].delTime
+            });
+        }
+        function spawnBullet(idd, cid, dm, x, y, sx, sy, hardness, delTime) {
+            if (idd == id) myBull.push(new Bullet(idd, cid, dm, x, y, sx, sy, hardness, delTime, myBull));
+            else bullets.push(new Bullet(idd, cid, dm, x, y, sx, sy, hardness, delTime, bullets));
+        }
+
+        function getPoint(n) {
+            if (!n) n = 1;
+            for (var i = 0; i < guns.length; i++)
+                guns[i].point += n;
+            ply.lvl+=n;
+            upPH();
+        }
+        function upPH() {
+            pointH = guns[0].point;
+            for (var i = 1; i < guns.length; i++)
+                if (pointH > guns[i].point) pointH = pointHguns[i].point;
+        }
+
+        function die(){
+            location.reload();
+        }
+
+        function mouseMove(evt) {
+
+            gmp = getMousePos(myCanvas, evt);
+
+            if (id > 0) {
+                ply.mX = gmp.x;
+                ply.mY = gmp.y;
+            }
+        }
+        function mouseDown(evt) {
+            guns[gunSelect].onFire = true;
+        }
+        function mouseUp(evt) {
+            guns[gunSelect].onFire = false;
         }
 
         function getMousePos(canvas, evt) {
             var rect = canvas.getBoundingClientRect();
             return {
-            x: evt.clientX - rect.left,
-            y: evt.clientY - rect.top
+                x: evt.clientX - rect.left,
+                y: evt.clientY - rect.top
             };
+        }
+
+        function circleDistFromLineSeg(circle, line) {
+            var v1, v2, v3, u;
+            v1 = {};
+            v2 = {};
+            v3 = {};
+            v1.x = line.p2.x - line.p1.x;
+            v1.y = line.p2.y - line.p1.y;
+            v2.x = circle.x - line.p1.x;
+            v2.y = circle.y - line.p1.y;
+            u = (v2.x * v1.x + v2.y * v1.y) / (v1.y * v1.y + v1.x * v1.x); // unit dist of point on line
+            if (u >= 0 && u <= 1) {
+                v3.x = (v1.x * u + line.p1.x) - circle.x;
+                v3.y = (v1.y * u + line.p1.y) - circle.y;
+                v3.x *= v3.x;
+                v3.y *= v3.y;
+                return Math.sqrt(v3.y + v3.x); // return distance from line
+            }
+            // get distance from end points
+            v3.x = circle.x - line.p2.x;
+            v3.y = circle.y - line.p2.y;
+            v3.x *= v3.x;  // square vectors
+            v3.y *= v3.y;
+            v2.x *= v2.x;
+            v2.y *= v2.y;
+            return Math.min(Math.sqrt(v2.y + v2.x), Math.sqrt(v3.y + v3.x)); // return smaller of two distances as the result
         }
 
         function parseURLParams(url) {
             var queryStart = url.indexOf("?") + 1,
-            queryEnd   = url.indexOf("#") + 1 || url.length + 1,
-            query = url.slice(queryStart, queryEnd - 1),
-            pairs = query.replace(/\+/g, " ").split("&"),
-            parms = {}, i, n, v, nv;
+                queryEnd = url.indexOf("#") + 1 || url.length + 1,
+                query = url.slice(queryStart, queryEnd - 1),
+                pairs = query.replace(/\+/g, " ").split("&"),
+                parms = {}, i, n, v, nv;
 
             if (query === url || query === "") return;
 
@@ -126,7 +413,7 @@
                 nv = pairs[i].split("=", 2);
                 n = decodeURIComponent(nv[0]);
                 v = decodeURIComponent(nv[1]);
-                
+
                 if (!parms.hasOwnProperty(n)) parms[n] = [];
                 parms[n].push(nv.length === 2 ? v : null);
             }
@@ -134,10 +421,13 @@
         }
     </script>
 </head>
+
 <body>
-    <canvas id="myCanvas" onmousemove="MP(event)" width="1280" height="720"></canvas>
+    <canvas id="myCanvas" onmousemove="mouseMove(event)" onmousedown="mouseDown(event)" onmouseup="mouseUp(event)" width="1280"
+        height="720"></canvas>
     <script>
         myCanvas = document.getElementById("myCanvas");
     </script>
 </body>
+
 </html>
