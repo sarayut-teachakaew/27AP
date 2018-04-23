@@ -10,9 +10,14 @@ class Bullet {
         this.y = y;
         this.sx = sx;
         this.sy = sy;
+        this.restart();
+        this.TS = 0 ;
         this.hardness = hardness;
         this.delTime = delTime;
         this.r = 0;
+    }
+    restart(){
+        this.start = 1;
     }
     update() {
         this.x += this.sx;
@@ -27,8 +32,22 @@ class Bullet {
     draw(canvas, clr) {
         var ctx = canvas.getContext("2d");
         ctx.fillStyle = clr;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.r, 0, 2 * Math.PI);
-        ctx.fill();
+
+        if(this.start>0){
+            this.start--;
+            var dist =  Math.sqrt(this.sx * this.sx + this.sy * this.sy)*1.5;
+            var speedR = Math.max(this.r/(dist*0.1),0.5);
+            ctx.beginPath();
+            ctx.arc(this.x-this.sx, this.y-this.sy, speedR, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.closePath();
+        }else{
+            var dist =  Math.sqrt(this.sx * this.sx + this.sy * this.sy)*1.5;
+            var speedR = Math.max(this.r/(dist*0.1),0.5);
+            ctx.beginPath();
+            ctx.ellipse(this.x-this.sx/2, this.y-this.sy/2, Math.max(dist,speedR),speedR , Math.atan2(this.sy, this.sx), 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.closePath();
+        }
     }
 }

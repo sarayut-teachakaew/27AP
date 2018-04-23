@@ -13,11 +13,13 @@ class Player {
         this.mX = this.x;
         this.mY = this.y - 1;
         this.rad = 0;
+        this.score = 0;
         this.fx = 0;
         this.fy = 0
         this.hp = 100;
         this.skin = skin;
         this.visible = false;
+        this.popText = [];
 
         if (this.skin in imgSkin) {
             this.img = new Image();
@@ -51,7 +53,7 @@ class Player {
                         this.x -= Math.cos(rrad);
                         this.y -= Math.sin(rrad);
                         //frad = Polygon.pr[k]*2-frad;
-                        dist --;
+                        dist--;
                         if (dist <= 0) {
                             dist = 0; break;
                         }
@@ -110,7 +112,7 @@ class Player {
         var ctx = canvas.getContext("2d");
 
         var hpl = 500;
-        var wp = (this.hp%hpl) * 0.2, hi = 6, fs = 20;
+        var wp = (this.hp % hpl) * 0.2, hi = 6, fs = 20;
         ctx.fillStyle = '#DC143C';
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 1;
@@ -124,8 +126,27 @@ class Player {
         ctx.stroke();
 
         ctx.font = "bold " + fs + "px Arial";
-        ctx.textAlign = "right";
-        if(this.hp>=hpl)ctx.fillText(Math.floor(this.hp/hpl),this.x + wp, this.y + this.size + fs / 3+hi+fs);
+        ctx.textAlign = "center";
+        if (this.hp >= hpl) ctx.fillText(Math.floor(this.hp / hpl), this.x + wp, this.y + this.size + fs / 3 + hi + fs);
+
+        var delPT = [];
+        ctx.textAlign = "center";
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = 'white';
+        for (var i = 0; i < this.popText.length; i++) {
+            this.popText[i].x += (this.popText[i].ex - this.popText[i].x) / 15;
+            this.popText[i].y += (this.popText[i].ey - this.popText[i].y) / 15;
+            if (Math.abs(this.popText[i].x - this.popText[i].ex) + Math.abs(this.popText[i].y - this.popText[i].ey) < 1) {
+                this.popText[i].x = this.popText[i].ex;
+                this.popText[i].y = this.popText[i].ey;
+                delPT.push(i);
+            }
+
+            ctx.fillStyle = this.popText[i].clr;
+            ctx.strokeText(this.popText[i].txt, this.popText[i].x+this.x, this.popText[i].y+this.y);
+            ctx.fillText(this.popText[i].txt, this.popText[i].x+this.x, this.popText[i].y+this.y);
+        }
+        for (var i = 0; i < delPT.length; i++)this.popText.splice(delPT[i], 1);
 
         //canvas.style.letterSpacing = '2px';
         ctx.textAlign = "center";

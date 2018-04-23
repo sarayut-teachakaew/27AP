@@ -97,12 +97,15 @@ io.on('connection', function (socket) {
   socket.on('hit bullet', function (bull) {
     io.emit('hit bullet', bull);
   });
+  socket.on('pop text', function (data) {
+    io.emit('pop text', data);
+  });
   socket.on('pass score', function (data) {
     io.emit('pass score', data);
   });
   socket.on('get coin', function (con) {
     for (var i = 0; i < coins.length; i++)if (coins[i].id == con.cId) {
-      io.emit('get coin', { pId: con.pId, cId: con.cId, exp: Math.floor(coins[i].value) });
+      io.emit('get coin', { pId: con.pId, cId: con.cId, exp: Math.round(coins[i].value) });
       sid++;
       spawnP.push({ id: sid, x: coins[i].x, y: coins[i].y });
       coins.splice(i, 1);
