@@ -201,6 +201,27 @@
             if (play.id == ply.id) return;
             players[play.id] = new Player(play.name, 0, 0, play.id, play.skin);
         });
+        socket.on('-load bullet', function (bulls) {
+            //console.log(bulls);
+            if(bulls.rid!=ply.id)return;
+            for (var i = 0; i < bulls.bulls.length; i++){
+                spawnBullet(bulls.bulls[i].id, bulls.bulls[i].cid, bulls.bulls[i].dmg, bulls.bulls[i].x, bulls.bulls[i].y
+                    , bulls.bulls[i].sx, bulls.bulls[i].sy, bulls.bulls[i].hardness, bulls.bulls[i].delTime);
+            }
+            console.log("Bullet has loaded");
+        });
+        socket.on('request bullet', function (rid) {
+            if (ply.id == rid) return;
+            var bulls = [];
+            for (var i = 0; i < myBull.length; i++) {
+                bulls.push({
+                    id: myBull[i].id, cid: myBull[i].cid, dmg: myBull[i].dmg, x: myBull[i].x, y: myBull[i].y
+                    , sx: myBull[i].sx, sy: myBull[i].sy, hardness: myBull[i].hardness, delTime: myBull[i].delTime
+                });
+            }
+            socket.emit('load bullet', {rid:rid,bulls:bulls});
+            console.log("Sending bullet");
+        });
         socket.on('player disconnect', function (id) {
             delete players[id];
         });
@@ -214,18 +235,22 @@
             for (var i = 0; i < bullets.length; i++) {
                 if (bullets[i].cid == bull.cid && bullets[i].id == bull.id) {
                     bullets[i].hardness = bull.hdn;
+                    bullets[i].sx = bull.sx;
+                    bullets[i].sy = bull.sy;
                 }
             }
             for (var i = 0; i < myBull.length; i++) {
                 if (myBull[i].cid == bull.cid && myBull[i].id == bull.id) {
                     myBull[i].hardness = bull.hdn;
+                    myBull[i].sx = bull.sx;
+                    myBull[i].sy = bull.sy;
                 }
             }
         });
         socket.on('pass score', function (data) {
             if (ply.id != data.id) return;
             var ex = Math.max(0, data.lvl - ply.lvl);
-            exp += 150 + ex * 10;
+            exp += 150 + data.lvl * 7 + ex * 20;
         });
         socket.on('spawn coin', function (c) {
             coins.push(c);
@@ -318,27 +343,39 @@
                         if (Math.sqrt((polygonArray[l][j].x - myBull[i].x) * (polygonArray[l][j].x - myBull[i].x)
                             + (polygonArray[l][j].y - myBull[i].y) * (polygonArray[l][j].y - myBull[i].y)) > polySize * 2) continue;
 
+                        for (var k = 0; k < numberOfSides; k++) {
+                            if (circleDistFromLineSeg({ x: myBull[i].x, y: myBull[i].y }
+                                , { p1: polygonArray[l][j].p[k], p2: polygonArray[l][j].p[k + 1] }) <= myBull[i].r) {
+                                //myBull[i].hardness = 0;
+                                var rrad = Polygon.pr[k] * 2 - Math.atan2(myBull[i].sy, myBull[i].sx);
+                                var dist = Math.sqrt(myBull[i].sx * myBull[i].sx + myBull[i].sy * myBull[i].sy);
+                                socket.emit('hit bullet', {
+                                    id: myBull[i].id, cid: myBull[i].cid, hdn: myBull[i].hardness
+                                    , sx: Math.cos(rrad) * dist, sy: Math.sin(rrad) * dist
+                                });
+                                continue myBL;
+                            }
+                        }
+
                         if (circleDistFromLineSeg({ x: polygonArray[l][j].x, y: polygonArray[l][j].y }, {
                             p1: { x: myBull[i].x, y: myBull[i].y }
                             , p2: { x: myBull[i].x + myBull[i].sx, y: myBull[i].y + myBull[i].sy }
                         }) < 53) {
-                            myBull[i].hardness = 0;
-                            socket.emit('hit bullet', { id: myBull[i].id, cid: myBull[i].cid, hdn: myBull[i].hardness });
+                            //myBull[i].hardness = 0;
+                            var rrad = -Math.atan2(polygonArray[l][j].y - myBull[i].y, polygonArray[l][j].x - myBull[i].x);
+                            var dist = Math.sqrt(myBull[i].sx * myBull[i].sx + myBull[i].sy * myBull[i].sy);
+                            socket.emit('hit bullet', {
+                                id: myBull[i].id, cid: myBull[i].cid, hdn: myBull[i].hardness
+                                , sx: Math.cos(rrad) * dist, sy: Math.sin(rrad) * dist
+                            });
                             continue myBL;
                         }
-                        for (var k = 0; k < numberOfSides; k++) {
-                            if (circleDistFromLineSeg({ x: myBull[i].x, y: myBull[i].y }
-                                , { p1: polygonArray[l][j].p[k], p2: polygonArray[l][j].p[k + 1] }) <= myBull[i].r) {
-                                myBull[i].hardness = 0;
-                                socket.emit('hit bullet', { id: myBull[i].id, cid: myBull[i].cid, hdn: myBull[i].hardness });
-                                continue myBL;
-                            }
-                        }
+
                     }
                 }
             }
             for (var j = 0; j < bullets.length; j++) {
-                if (bullHit[bullets[j]]) continue;
+                if (bullHit[bullets[j].id + ":" + bullets[j].cid]) continue;
                 if (Math.sqrt((bullets[j].x - ply.x) * (bullets[j].x - ply.x)
                     + (bullets[j].y - ply.y) * (bullets[j].y - ply.y)) > ply.r + bullets[j].r
                     + Math.sqrt(bullets[j].sx * bullets[j].sx + bullets[j].sy * bullets[j].sy)) continue;
@@ -348,7 +385,7 @@
                     , p2: { x: bullets[j].x + bullets[j].sx, y: bullets[j].y + bullets[j].sy }
                 }) <= ply.r + bullets[j].r) {
                     bullHit[bullets[j]] = 60;
-                    ply.hp -= bullets[j].dmg;
+                    ply.hp -= bullets[j].dmg + bullets[j].hardness/25;
                     bullets[j].hardness -= bullets[j].dmg + 50;
                     if (bullets[j].hardness < 0) bullets[j].hardness = 0;
                     socket.emit('hit bullet', { id: bullets[j].id, cid: bullets[j].cid, hdn: bullets[j].hardness });
@@ -389,7 +426,7 @@
             //END draw polygon
 
             for (var i = 0; i < coins.length; i++) {
-                if (coins[i].value < 150) coins[i].value += 0.005;
+                if (coins[i].value < 150) coins[i].value += (150 - coins[i].value) / 10000;
 
                 ctx.fillStyle = '#FFD700';
                 ctx.beginPath();
@@ -425,7 +462,7 @@
             ctx.textAlign = "left";
             ctx.fillStyle = '#778899';
             var tx = 10, ty = 20;
-            var text = ["MODE" + (gunSelect + 1)
+            var text = ["SET " + (gunSelect + 1)
                 , (keys[66] ? "Z- " : (guns[gunSelect].point > 0 ? "Z+ " : "")) + "[" + guns[gunSelect].pHardness + "]Hardness"
                 , (keys[66] ? "X- " : (guns[gunSelect].point > 0 ? "X+ " : "")) + "[" + guns[gunSelect].pDamage + "]Damage"
                 , (keys[66] ? "C- " : (guns[gunSelect].point > 0 ? "C+ " : "")) + "[" + guns[gunSelect].pAccurate + "]Accurate"
@@ -443,18 +480,24 @@
             ctx.translate(-panX, -panY);
 
             if (gmp) {
-                var wi = 30, hi = 6;
+                var cdl = 5, cd = guns[gunSelect].cooldown / 1000;
+                var wi = 30, hi = 6, fs = 20;
                 ctx.fillStyle = '#4682B4';
                 ctx.strokeStyle = 'white';
                 ctx.lineWidth = 1;
                 ctx.beginPath();
                 ctx.moveTo(ply.mX, ply.mY);
-                ctx.lineTo(ply.mX - wi * guns[gunSelect].cooldown / 1000, ply.mY);
-                ctx.lineTo(ply.mX - wi * guns[gunSelect].cooldown / 1000, ply.mY + hi);
+                ctx.lineTo(ply.mX - wi * (cd % cdl), ply.mY);
+                ctx.lineTo(ply.mX - wi * (cd % cdl), ply.mY + hi);
                 ctx.lineTo(ply.mX, ply.mY + hi);
                 ctx.closePath();
                 ctx.fill();
                 ctx.stroke();
+                ctx.font = "bold " + fs + "px Arial";
+                ctx.textAlign = "right";
+                if (cd >= cdl)
+                    ctx.fillText(Math.floor(cd / cdl), ply.mX - 1, ply.mY + hi + fs);
+
             }
 
             ctx.restore();

@@ -47,9 +47,11 @@ class Player {
                     while (dist > 0 && circleDistFromLineSeg({ x: this.x + dist * Math.cos(frad), y: this.y + dist * Math.sin(frad) }
                         , { p1: polygonArray[i][j].p[k], p2: polygonArray[i][j].p[k + 1] }) < this.r / 2) {
                         var rrad = Math.atan2(polygonArray[i][j].y - this.y, polygonArray[i][j].x - this.x);
+                        //var rrad = Polygon.pr[k]* 180 / Math.PI;
                         this.x -= Math.cos(rrad);
                         this.y -= Math.sin(rrad);
-                        dist -= 0.5;
+                        //frad = Polygon.pr[k]*2-frad;
+                        dist --;
                         if (dist <= 0) {
                             dist = 0; break;
                         }
@@ -107,7 +109,8 @@ class Player {
         if (!this.visible) return;
         var ctx = canvas.getContext("2d");
 
-        var wp = this.hp * 0.1, hi = 6, fs = 20;
+        var hpl = 500;
+        var wp = (this.hp%hpl) * 0.2, hi = 6, fs = 20;
         ctx.fillStyle = '#DC143C';
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 1;
@@ -121,6 +124,9 @@ class Player {
         ctx.stroke();
 
         ctx.font = "bold " + fs + "px Arial";
+        ctx.textAlign = "right";
+        if(this.hp>=hpl)ctx.fillText(Math.floor(this.hp/hpl),this.x + wp, this.y + this.size + fs / 3+hi+fs);
+
         //canvas.style.letterSpacing = '2px';
         ctx.textAlign = "center";
         ctx.strokeStyle = 'black';

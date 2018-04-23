@@ -41,7 +41,7 @@ for (var i = 0; i < numberPolyY; i++) {
 }
 setInterval(update, 1000);
 function update() {
-  if (spawnP.length > 0) {
+  if (spawnP.length > 0 && coins.length < Math.sqrt(players.length) * 25) {
     for (var i = 0; i < players.length; i++)if (Math.random() <= 0.24) {
       var sp = Math.floor((spawnP.length * Math.random()) % spawnP.length);
       coins.push({ id: spawnP[sp].id, x: spawnP[sp].x, y: spawnP[sp].y, value: 10 });
@@ -52,28 +52,34 @@ function update() {
 }
 setInterval(update2, 17);
 function update2() {
-  for (var i = 0; i < coins.length; i++)if (coins[i].value < 150) coins[i].value += 0.005;
+  if (players.length == 0) return;
+  for (var i = 0; i < coins.length; i++) {
+    if (coins[i].value < 150)
+      coins[i].value += (150 - coins[i].value) / 10000;
+  }
 }
-
+var Sid={};
 io.on('connection', function (socket) {
-  var id = 0,name='';
+  var id = 0, name = '';
   idBase++;
+  Sid[idBase]=socket;
   socket.emit('user id', { id: idBase, seed: seedBase });
   socket.on('player connect', function (play) {
-    //console.log("sending");
-    //console.log(players);
     socket.emit('load game', { player: players });
     socket.emit('load coin', coins);
+
+    if (players.length > 0)io.emit('request bullet', idBase);
+
     id = play.id;
     name = play.name;
     players.push(play);
     io.emit('player connect', play);
-    console.log(name+" has Connected(total:" + players.length+")");
+    console.log(name + " has Connected(total:" + players.length + ")");
   });
 
   socket.on('disconnect', function () {
     for (var i = 0; i < players.length; i++)if (players[i].id == id) players.splice(i, 1);
-    console.log(name+" has Disconnected(total:" + players.length+")");
+    console.log(name + " has Disconnected(total:" + players.length + ")");
 
     io.emit('player disconnect', id);
   });
@@ -81,7 +87,9 @@ io.on('connection', function (socket) {
   socket.on('player data', function (player) {
     io.emit('player data', player);
   });
-
+  socket.on('load bullet', function (bulls) {
+    Sid[bulls.rid].emit('-load bullet', bulls);
+  });
   socket.on('spawn bullet', function (bull) {
     io.emit('spawn bullet', bull);
   });

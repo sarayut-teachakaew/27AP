@@ -17,8 +17,8 @@ class Gun {
     }
     upGrade() {
         this.fireRate = 10 + this.pFireRate * 1.4;
-        this.bulletSpeed = Math.max(8 + this.pDamage - Math.sqrt(this.pHardness * 2), 1);
-        this.hardness = 70 + this.pHardness * 20;
+        this.bulletSpeed = Math.max(4 + Math.sqrt(this.pDamage*2)/2 - Math.sqrt(this.pHardness)*0.8, 0.1);
+        this.hardness = 70 + this.pHardness * 30;
         this.speed = 2 + Math.sqrt(this.pSpeed) * 0.7;
         this.recoil = (1 + this.pDamage * 0.6) / (1 + this.pAccurate * 1.1) * 0.03;
         this.delTime = 400 + this.pAccurate * 30 + this.pHardness * 8;
@@ -32,7 +32,7 @@ class Gun {
         if (this.cooldown < 0) this.cooldown = 0;
         if (this.onFire && this.cooldown <= 0) {
             this.fire();
-            this.cooldown = 1000 + this.pHardness * 30;
+            this.cooldown = 1000 + this.pHardness * 40;
 
             if (Math.random() < 0.05) this.aimR = !this.aimR;
             this.tarAim += Math.random() * this.recoil * (this.aimR ? 1 : -1);

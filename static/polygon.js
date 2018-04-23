@@ -38,4 +38,13 @@ class Polygon {
             ctx.stroke();
         }
     }
+
+    get pr() {
+        return this.constructor.pr;
+    }
+}
+var numberOfSides=6;
+Polygon.pr=[];
+for (var i = -1; i < numberOfSides-1; i += 1) {
+    Polygon.pr.push(i * 2 * Math.PI / numberOfSides);
 }
