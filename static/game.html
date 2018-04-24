@@ -25,6 +25,9 @@
         var keys = [];
         var name = '';
         var skin = '';
+        var color1= '#C0C0C0';
+        var color2= '#808080';
+        var color3= 'white';
         var seed = 1;
         var mapLoad = false;
         var vision = 1280;
@@ -39,10 +42,23 @@
         var polySize = 70;
 
         if (getPara.name) name = getPara.name;
-        if (getPara.skin) {
-            skin = getPara.skin;
+        if (getPara.pskin) {
+            skin = getPara.pskin;
             if (typeof skin != "string") skin = skin[0];
         }
+        if (getPara.color1) {
+            color1 = getPara.color1;
+            if (typeof color1 != "string") color1 = color1[0];
+        }
+        if (getPara.color2) {
+            color2 = getPara.color2;
+            if (typeof color2 != "string") color2 = color2[0];
+        }
+        if (getPara.color3) {
+            color3 = getPara.color3;
+            if (typeof color3 != "string") color3 = color3[0];
+        }
+
         var guns = [new Gun(spawnPlayerBullet), new Gun(spawnPlayerBullet), new Gun(spawnPlayerBullet), new Gun(spawnPlayerBullet)];
         var gunSelect = 0;
         var bullets = [];
@@ -98,10 +114,11 @@
             //END create polygon
 
             var sp = Math.floor((spawnP.length * Math.random()) % spawnP.length);
-            ply = new Player(name, spawnP[sp].x, spawnP[sp].y, id, skin);
+            ply = new Player(name, spawnP[sp].x, spawnP[sp].y, id, skin ,color1,color2,color3);
             ply.visible = true;
             players[ply.id] = ply;
-            socket.emit('player connect', { id: ply.id, name: ply.name, skin: ply.skin });
+            socket.emit('player connect', { id: ply.id, name: ply.name, skin: ply.skin 
+                ,color1:ply.color1,color2:ply.color2,color3:ply.color3});
 
             getPoint(10);
             ply.lvl = 0;
@@ -191,7 +208,7 @@
         socket.on('load game', function (data) {
             //console.log(data.player);
             data.player.forEach(play => {
-                players[play.id] = new Player(play.name, 0, 0, play.id, play.skin);
+                players[play.id] = new Player(play.name, 0, 0, play.id, play.skin,color1,color2,color3);
             });
         });
         socket.on('load coin', function (cs) {
@@ -199,7 +216,7 @@
         });
         socket.on('player connect', function (play) {
             if (play.id == ply.id) return;
-            players[play.id] = new Player(play.name, 0, 0, play.id, play.skin);
+            players[play.id] = new Player(play.name, 0, 0, play.id, play.skin,color1,color2,color3);
         });
         socket.on('-load bullet', function (bulls) {
             //console.log(bulls);
@@ -492,6 +509,16 @@
                     + (myBull[i].y - ply.y) * (myBull[i].y - ply.y)) < vision)
                     myBull[i].draw(myCanvas, "#00BFFF");
 
+            //START draw polygon filled
+            for (i = 0; i < numberPolyY; i++) {
+                for (j = 0; j < numberPolyX; j++) {
+                    if (polygonArray[i][j].filled && Math.sqrt((polygonArray[i][j].x - ply.x) * (polygonArray[i][j].x - ply.x)
+                        + (polygonArray[i][j].y - ply.y) * (polygonArray[i][j].y - ply.y)) < vision)
+                        polygonArray[i][j].draw(myCanvas);
+                }
+            }
+            //END draw polygon
+            
             for (var key in players)
                 if (Math.sqrt((players[key].x - ply.x) * (players[key].x - ply.x)
                     + (players[key].y - ply.y) * (players[key].y - ply.y)) < vision)
@@ -502,16 +529,6 @@
                     + (players[key].y - ply.y) * (players[key].y - ply.y)) < vision)
                     players[key].drawText(myCanvas);
                 else players[key].popText = [];
-
-            //START draw polygon filled
-            for (i = 0; i < numberPolyY; i++) {
-                for (j = 0; j < numberPolyX; j++) {
-                    if (polygonArray[i][j].filled && Math.sqrt((polygonArray[i][j].x - ply.x) * (polygonArray[i][j].x - ply.x)
-                        + (polygonArray[i][j].y - ply.y) * (polygonArray[i][j].y - ply.y)) < vision)
-                        polygonArray[i][j].draw(myCanvas);
-                }
-            }
-            //END draw polygon
 
             ctx.restore();
 

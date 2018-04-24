@@ -1,61 +1,245 @@
-<!DOCTYPE html>
 <html>
-<head>
-    <title>2 7 A P</title>
+    <head>
+        <title>27AP</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" type="text/css"  href="css/style.css">
+        <link rel="stylesheet" type="text/css"  href="css/main.css">
+        <link rel="stylesheet" type="text/css"  href="css/util.css">
+        <link rel="stylesheet" type="text/css" href="fonts/font-awesome-4.7.0/css/font-awesome.min.css">
+        <link rel="stylesheet" type="text/css" href="vendor/bootstrap/css/bootstrap.min.css">
+        
+ 
+    
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            var socket = io();
+        </script>
 
-    <meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
+        <script>
+        	const imgSkin = { 
+                "9gag1": "/image/9gag1.png" ,"9gag2":"/image/9gag2.png","9gag3":"/image/9gag3.png"
+                ,"9gag4":"/image/9gag4.png", "9gag5":"/image/9gag5.png", "9gag6":"/image/9gag6.png"
+                , "9gag7":"/image/9gag7.png", "9gag8":"/image/9gag8.png", "9gag9":"/image/9gag9.png"
+                , "9gag10":"/image/9gag10.png", "kaimaow1":"/image/ลุงไข่.png","kaimaow2":"/image/ตาใส.png"
+                , "kaimaow3":"/image/แจ๊คแม้ว.png"
+            };
 
- 	<link rel="stylesheet" type="text/css" href="fonts/font-awesome-4.7.0/css/font-awesome.min.css">
- 	<link rel="stylesheet" type="text/css" href="vendor/bootstrap/css/bootstrap.min.css">
-	<link rel="stylesheet" type="text/css" href="css/util.css">
-	<link rel="stylesheet" type="text/css" href="css/main.css">
+            function hidden(){
+                
+                var selskin = document.getElementById("pskin").value;
+                if(selskin == "original"){
+                    table.style.display = "block";
+                  
+                }
+                else{
+                    table.style.display = "none";
+         
+                
+                }
+            }
+                function getRandomColor() {
+                      var letters = '0123456789ABCDEF';
+                      var color = '#';
+                      for (var i = 0; i < 6; i++) {
+                        color += letters[Math.floor(Math.random() * 16)];
+                      }
+                      return color;
+                }
+                
+                function setRandomColor() {
+                	 document.getElementById("colorpad1").value = getRandomColor();
+                	 document.getElementById("colorpad2").value = getRandomColor();
+                	 document.getElementById("color3").value = "#FFFFFF";
+                      //$("#colorpad1").css("background-color", getRandomColor());
+                      //$("#colorpad2").css("background-color", getRandomColor());
+                      draw();
+                }
+        	
+                function draw(){
+                    hidden();
+                    //console.log("in");
+        			var color1 = document.getElementById("colorpad1").value;
+                	var color2 = document.getElementById("colorpad2").value;
+                    var canvas = document.getElementById("myCanvas");
+                    var ctx = canvas.getContext("2d");
+                    var size = canvas.height*0.45;
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        var socket = io();
-    </script>
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    //console.log(canvas);
+                    
+                    
+                    var skin = document.getElementById("pskin").value;
 
-</head>
-<body>
-	
-<div class="limiter">
-	<div class="container-login100">
-		<div class="wrap-login100 p-t-50 p-b-90">
-			<form action="/game.html" method="GET" class="login100-form validate-form flex-sb flex-w">
-				<span class="login100-form-title p-b-51">
-					2 7 A P
-				</span>
-				<div class="wrap-input100 validate-input m-b-16" data-validate = "Name is required">
-					<input class="input100" type="text" name="name" placeholder="Name" id="name">
-					<span class="focus-input100"></span>
-				</div>
-				<br>
-				<div>
-					Color
-				</div> 
-				<div class="styled-select select">
-					<select>
-						<option>Red</option>
-						<option>Blue</option>
-						<option>Green</option>
-					  </select>
-				</div>
-					<div class="container-login100-form-btn m-t-17">
-						<button class="login100-form-btn" >
+                    if(skin != "original"){
+                    var img = new Image();
+                    img.src = imgSkin[skin];
+                    img.onload = function () {
+                        ctx.save();
+                        ctx.translate(canvas.width/2,canvas.height/2);
+
+                    var imgW = size * 5 / 4;
+                    var imgH = imgW * img.height / img.width;
+                    //console.log({s:size,w:imgW,h:imgH})
+
+                    ctx.drawImage(img,-imgW/2,-imgH/2,imgW,imgH);
+
+                    var name = document.getElementById("name").value;
+                    var ncolor = document.getElementById("color3").value;
+                    //canvas.style.letterSpacing = '2px';
+                    ctx.font = "bold 30px Arial";
+        			ctx.textAlign = "center";
+        			ctx.strokeStyle = 'black';
+        			ctx.lineWidth = 4;
+        			ctx.strokeText(name, 0, size);
+        			ctx.fillStyle = ncolor;
+                    ctx.fillText(name, 0, size);
+                    
+                    ctx.restore();
+                    };
+                    }
+                    else{
+                        //console.log(size);
+                        ctx.save();
+                    ctx.translate(canvas.width/2,canvas.height/2);
+
+                    ctx.fillStyle = color1;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -size/2);
+                    ctx.lineTo(0,size/3);
+                    ctx.lineTo(0-size/1.8,size/1.5);
+                    ctx.closePath();
+                    ctx.fill();
+        
+                    ctx.fillStyle = color2;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -size/2);
+                    ctx.lineTo(0,size/3);
+                    ctx.lineTo(size/1.8,size/1.5);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    var name = document.getElementById("name").value;
+                    var ncolor = document.getElementById("color3").value;
+                    //canvas.style.letterSpacing = '2px';
+                    ctx.font = "bold 30px Arial";
+        			ctx.textAlign = "center";
+        			ctx.strokeStyle = 'black';
+        			ctx.lineWidth = 4;
+        			ctx.strokeText(name, 0, size);
+        			ctx.fillStyle = ncolor;
+                    ctx.fillText(name, 0, size);
+                    
+                    ctx.restore();
+                    }
+
+                }
+            </script>
+    </head>
+    <body>
+        <form action="/game.html" method="GET" >
+        <div class="login-box">
+        	<center><canvas id="myCanvas" align=center width=350% height=200% ></canvas><br><br>
+            <span class="title">
+                    2 7 A P
+            </span>
+            <div class="wrap-input100 validate-input" data-validate = "Name is required">
+                <input class="input100" required type="text" name="name" placeholder="Name" id="name" onchange="draw()" maxlength="20">
+                <span class="focus-input100"></span>
+            </div>
+            <script>
+                var it =  document.getElementById("name");
+                it.onkeyup = function(e){
+                    draw();
+                }
+            </script>
+            <div>
+            	<br>Name Color
+                <input type="color" name="color3" id="color3" list="colors2" onchange="draw()">
+            </div>
+            <br>
+            <div>
+            	Skin
+            	<select class="select" name="pskin"id="pskin" onchange="draw()">
+                    <option value="original">Original</option>
+                    <option value="kaimaow1">ลุงไข่</option>
+                    <option value="kaimaow2">ตาใส</option>
+                    <option value="kaimaow3">แจ๊คแม้ว</option>
+                    <option value="9gag1">9gag Troll Face</option>
+                    <option value="9gag2">9gag Are you fucking kidding me?</option>
+                    <option value="9gag3">9gag Poker Face</option>
+                    <option value="9gag4">9gag Yao Ming</option>
+                    <option value="9gag5">9gag Y U no</option>
+                    <option value="9gag6">9gag Happy Smile</option>
+                    <option value="9gag7">9gag Genius</option>
+                    <option value="9gag8">9gag Forever Alone</option>
+                    <option value="9gag9">9gag LOL Crazy</option>
+                    <option value="9gag10">9gag Me Gusa</option>
+            	</select>
+            </div>
+            <br>
+            <div id="table"style="display: none">
+            <tr>
+                <th>
+                    Color1
+                    <input type="color" name="color1" id="colorpad1" list="colors1" onchange="draw()">
+                </th>
+                <th>
+                    &nbsp;Color2
+                    <input type="color" name="color2" id="colorpad2" list="colors1" onchange="draw()">
+                </th>
+                <datalist id="colors1">
+                        <option>#151515</option>
+                        <option>#454545</option>
+                        <option>#880015</option>
+                        <option>#ed1c24</option>
+                        <option>#ff7f24</option>
+
+                        <option>#C0C0C0</option>
+                        <option>#7f7f7f</option>
+                        <option>#b97aa4</option>
+                        <option>#ffaec9</option>
+                        <option>#ffc90e</option>
+
+                        <option>#a349a4</option>
+                        <option>#3f48cc</option>
+                        <option>#00a2e8</option>
+                        <option>#22b14c</option>
+                        <option>#ffd920</option>
+
+                        <option>#c8bfff</option>
+                        <option>#7092be</option>
+                        <option>#99d9ea</option>
+                        <option>#b5e61d</option>
+                        <option>#efe4b0</option>
+                </datalist>
+                <datalist id="colors2">
+                        <option>#ffffff</option>
+                        <option>#ffcc00</option>
+                        <option>#ff9500</option>
+                        <option>#ff3a31</option>
+                        <option>#cc73e1</option>
+                        <option>#8f8e94</option>
+                        <option>#007bff</option>
+                        <option>#49beff</option>
+                        <option>#b5e644</option>
+                        <option>#4bd963</option>
+
+                    </datalist>
+               <button  type="button"  onclick="setRandomColor()" style="border:2px;color:white;background-color:deepskyblue;">random</button>
+            </tr>
+            </div>
+            <div>
+            	<br><button class="button">
 							P l a y !
-						</button>
-					</div>
-			</form>
-		</div>
-	</div>
-</div>
-	
-	<div id="dropDownSelect1"></div>
-	<script src="vendor/jquery/jquery-3.2.1.min.js"></script>
-	<script src="vendor/bootstrap/js/popper.js"></script>
-	<script src="vendor/bootstrap/js/bootstrap.min.js"></script>
-	<script src="js/main.js"></script>
+				</button>
 
-</body>
+            </div>
+        </div></center>
+    </form>
+        <script>
+        		setRandomColor();
+                myCanvas = document.getElementById("myCanvas");
+        </script>
+    </body>
 </html>

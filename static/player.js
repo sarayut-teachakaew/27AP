@@ -1,7 +1,13 @@
-const imgSkin = { "9gag": "/image/9gag.png" };
+const imgSkin = { 
+    "9gag1": "/image/9gag1.png" ,"9gag2":"/image/9gag2.png","9gag3":"/image/9gag3.png"
+    ,"9gag4":"/image/9gag4.png", "9gag5":"/image/9gag5.png", "9gag6":"/image/9gag6.png"
+    , "9gag7":"/image/9gag7.png", "9gag8":"/image/9gag8.png", "9gag9":"/image/9gag9.png"
+    , "9gag10":"/image/9gag10.png", "kaimaow1":"/image/ลุงไข่.png" ,"kaimaow2":"/image/ตาใส.png"
+    , "kaimaow3":"/image/แจ๊คแม้ว.png"
+};
 
 class Player {
-    constructor(name, xPos, yPos, id, skin) {
+    constructor(name, xPos, yPos, id, skin , color1 ,color2 ,color3) {
         var _this = this;
         this.name = name;
         this.id = id;
@@ -18,6 +24,9 @@ class Player {
         this.fy = 0
         this.hp = 100;
         this.skin = skin;
+        this.color1 = color1;
+        this.color2 = color2;
+        this.color3 = color3;
         this.visible = false;
         this.popText = [];
 
@@ -83,7 +92,7 @@ class Player {
             if (this.imgLoad) ctx.drawImage(this.img, -this.imgW / 2, -this.imgH / 2, this.imgW, this.imgH);
         }
         else {
-            ctx.fillStyle = '#C0C0C0';
+            ctx.fillStyle = this.color1;
             ctx.beginPath();
             ctx.moveTo(0, -this.size / 2 - this.size / 5);
             ctx.lineTo(0, this.size / 3 - this.size / 5);
@@ -91,7 +100,7 @@ class Player {
             ctx.closePath();
             ctx.fill();
 
-            ctx.fillStyle = '#808080';
+            ctx.fillStyle = this.color2;
             ctx.beginPath();
             ctx.moveTo(0, -this.size / 2 - this.size / 5);
             ctx.lineTo(0, this.size / 3 - this.size / 5);
