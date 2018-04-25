@@ -228,7 +228,7 @@
                 spawnBullet(bulls.bulls[i].id, bulls.bulls[i].cid, bulls.bulls[i].dmg, bulls.bulls[i].x, bulls.bulls[i].y
                     , bulls.bulls[i].sx, bulls.bulls[i].sy, bulls.bulls[i].hardness, bulls.bulls[i].delTime);
             }
-            console.log("Bullet has loaded");
+            //console.log("Bullet has loaded");
         });
         socket.on('request bullet', function (rid) {
             if (ply.id == rid) return;
@@ -240,10 +240,10 @@
                 });
             }
             socket.emit('load bullet', { rid: rid, bulls: bulls });
-            console.log("Sending bullet");
+            //console.log("Sending bullet");
         });
         socket.on('player disconnect', function (id) {
-            console.log(players[id]);
+            //console.log(players[id]);
             if(id in players)if (players[id].popText != [])
                 for(var i=0;i <players[id].popText.length;i++){
                     players[id].popText[i].x+=players[id].x;
@@ -254,7 +254,7 @@
                     /*popText.push({ txt: players[id].popText[i].txt, x: players[id].popText[i].x+players[id].x
                         , y: players[id].popText[i].y+players[id].y, ex: players[id].popText[i].ex+players[id].ex
                         , ey: players[id].popText[i].ey+players[id].ey, clr: players[id].popText[i].clr });*/
-                    console.log(popText[popText.length-1]);
+                    //console.log(popText[popText.length-1]);
                 }
             delete players[id];
         });
