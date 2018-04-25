@@ -50,7 +50,6 @@
                 function setRandomColor() {
                 	 document.getElementById("colorpad1").value = getRandomColor();
                 	 document.getElementById("colorpad2").value = getRandomColor();
-                	 document.getElementById("color3").value = "#FFFFFF";
                       //$("#colorpad1").css("background-color", getRandomColor());
                       //$("#colorpad2").css("background-color", getRandomColor());
                       draw();
@@ -240,6 +239,7 @@
         <script>
         		setRandomColor();
                 myCanvas = document.getElementById("myCanvas");
+                document.getElementById("color3").value = "#FFFFFF";
         </script>
     </body>
 </html>
