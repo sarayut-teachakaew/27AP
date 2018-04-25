@@ -25,9 +25,9 @@
         var keys = [];
         var name = '';
         var skin = '';
-        var color1= '#C0C0C0';
-        var color2= '#808080';
-        var color3= 'white';
+        var color1 = '#C0C0C0';
+        var color2 = '#808080';
+        var color3 = 'white';
         var seed = 1;
         var mapLoad = false;
         var vision = 1280;
@@ -40,6 +40,7 @@
         var polyPosX = 0;
         var polyPosY = 100;
         var polySize = 70;
+        var popText = [];
 
         if (getPara.name) name = getPara.name;
         if (getPara.pskin) {
@@ -114,11 +115,13 @@
             //END create polygon
 
             var sp = Math.floor((spawnP.length * Math.random()) % spawnP.length);
-            ply = new Player(name, spawnP[sp].x, spawnP[sp].y, id, skin ,color1,color2,color3);
+            ply = new Player(name, spawnP[sp].x, spawnP[sp].y, id, skin, color1, color2, color3);
             ply.visible = true;
             players[ply.id] = ply;
-            socket.emit('player connect', { id: ply.id, name: ply.name, skin: ply.skin 
-                ,color1:ply.color1,color2:ply.color2,color3:ply.color3});
+            socket.emit('player connect', {
+                id: ply.id, name: ply.name, skin: ply.skin
+                , color1: ply.color1, color2: ply.color2, color3: ply.color3
+            });
 
             getPoint(10);
             ply.lvl = 0;
@@ -208,7 +211,7 @@
         socket.on('load game', function (data) {
             //console.log(data.player);
             data.player.forEach(play => {
-                players[play.id] = new Player(play.name, 0, 0, play.id, play.skin,color1,color2,color3);
+                players[play.id] = new Player(play.name, 0, 0, play.id, play.skin, play.color1, play.color2, play.color3);
             });
         });
         socket.on('load coin', function (cs) {
@@ -216,7 +219,7 @@
         });
         socket.on('player connect', function (play) {
             if (play.id == ply.id) return;
-            players[play.id] = new Player(play.name, 0, 0, play.id, play.skin,color1,color2,color3);
+            players[play.id] = new Player(play.name, 0, 0, play.id, play.skin, play.color1, play.color2, play.color3);
         });
         socket.on('-load bullet', function (bulls) {
             //console.log(bulls);
@@ -240,6 +243,19 @@
             console.log("Sending bullet");
         });
         socket.on('player disconnect', function (id) {
+            console.log(players[id]);
+            if(id in players)if (players[id].popText != [])
+                for(var i=0;i <players[id].popText.length;i++){
+                    players[id].popText[i].x+=players[id].x;
+                    players[id].popText[i].y+=players[id].y;
+                    players[id].popText[i].ex+=players[id].x;
+                    players[id].popText[i].ey+=players[id].y;
+                    popText.push(players[id].popText[i]);
+                    /*popText.push({ txt: players[id].popText[i].txt, x: players[id].popText[i].x+players[id].x
+                        , y: players[id].popText[i].y+players[id].y, ex: players[id].popText[i].ex+players[id].ex
+                        , ey: players[id].popText[i].ey+players[id].ey, clr: players[id].popText[i].clr });*/
+                    console.log(popText[popText.length-1]);
+                }
             delete players[id];
         });
         socket.on('spawn bullet', function (bull) {
@@ -251,17 +267,21 @@
             //if (bull.id == ply.id) return;
             for (var i = 0; i < bullets.length; i++) {
                 if (bullets[i].cid == bull.cid && bullets[i].id == bull.id) {
-                    bullets[i].hardness = bull.hdn;
-                    bullets[i].sx = bull.sx;
-                    bullets[i].sy = bull.sy;
+                    if ('hdn' in bull) bullets[i].hardness = bull.hdn;
+                    if ('x' in bull) bullets[i].x = bull.x;
+                    if ('y' in bull) bullets[i].y = bull.y;
+                    if ('sx' in bull) bullets[i].sx = bull.sx;
+                    if ('sy' in bull) bullets[i].sy = bull.sy;
                     if (bull.start) bullets[i].restart();
                 }
             }
             for (var i = 0; i < myBull.length; i++) {
                 if (myBull[i].cid == bull.cid && myBull[i].id == bull.id) {
-                    myBull[i].hardness = bull.hdn;
-                    myBull[i].sx = bull.sx;
-                    myBull[i].sy = bull.sy;
+                    if ('hdn' in bull) myBull[i].hardness = bull.hdn;
+                    if ('x' in bull) myBull[i].x = bull.x;
+                    if ('y' in bull) myBull[i].y = bull.y;
+                    if ('sx' in bull) myBull[i].sx = bull.sx;
+                    if ('sy' in bull) myBull[i].sy = bull.sy;
                     if (bull.start) myBull[i].restart();
                 }
             }
@@ -338,12 +358,12 @@
             socket.emit('player data', { x: ply.x, y: ply.y, rad: ply.rad, hp: ply.hp, id: ply.id, score: ply.lvl * 100 + exp });
 
             //console.log(myBull.length);
-            if(myBull.length>100){
+            if (myBull.length > 100) {
                 myBull[0].hardness = 0;
                 socket.emit('hit bullet', {
-                                    id: myBull[0].id, cid: myBull[0].cid, hdn: myBull[0].hardness
-                                    , sx: Math.cos(rrad) * dist, sy: Math.sin(rrad) * dist, start: true
-                                });
+                    id: myBull[0].id, cid: myBull[0].cid, hdn: myBull[0].hardness
+                    , sx: Math.cos(rrad) * dist, sy: Math.sin(rrad) * dist, start: true
+                });
             }
 
             for (var b in bullHit) {
@@ -412,20 +432,22 @@
                                 continue myBL;
                             }
                         }
-                            if (circleDistFromLineSeg({ x: polygonArray[l][j].x, y: polygonArray[l][j].y }, {
-                                p1: { x: myBull[i].x, y: myBull[i].y }
-                                , p2: { x: myBull[i].x + myBull[i].sx, y: myBull[i].y + myBull[i].sy }
-                            }) < 55) {
-                                //myBull[i].hardness = 0;
-                                var rrad = -Math.atan2(polygonArray[l][j].y - myBull[i].y, polygonArray[l][j].x - myBull[i].x);
-                                socket.emit('hit bullet', {
-                                    id: myBull[i].id, cid: myBull[i].cid, hdn: myBull[i].hardness
-                                    , sx: Math.cos(rrad) * dist, sy: Math.sin(rrad) * dist
-                                });
-                                myBull[i].TS = 30;
-                                //console.log("re");
-                                continue myBL;
-                            }
+                        if (circleDistFromLineSeg({ x: polygonArray[l][j].x, y: polygonArray[l][j].y }, {
+                            p1: { x: myBull[i].x, y: myBull[i].y }
+                            , p2: { x: myBull[i].x + myBull[i].sx, y: myBull[i].y + myBull[i].sy }
+                        }) < 55) {
+                            //myBull[i].hardness = 0;
+                            myBull[i].x -= myBull[i].sx / 2;
+                            myBull[i].y -= myBull[i].sy / 2;
+                            var rrad = -Math.atan2(polygonArray[l][j].y - myBull[i].y, polygonArray[l][j].x - myBull[i].x);
+                            socket.emit('hit bullet', {
+                                id: myBull[i].id, cid: myBull[i].cid, hdn: myBull[i].hardness, x: myBull[i].x, y: myBull[i].y
+                                , sx: Math.cos(rrad) * dist, sy: Math.sin(rrad) * dist
+                            });
+                            myBull[i].TS = 30;
+                            //console.log("re");
+                            continue myBL;
+                        }
                     }
                 }
             }
@@ -518,7 +540,7 @@
                 }
             }
             //END draw polygon
-            
+
             for (var key in players)
                 if (Math.sqrt((players[key].x - ply.x) * (players[key].x - ply.x)
                     + (players[key].y - ply.y) * (players[key].y - ply.y)) < vision)
@@ -529,6 +551,25 @@
                     + (players[key].y - ply.y) * (players[key].y - ply.y)) < vision)
                     players[key].drawText(myCanvas);
                 else players[key].popText = [];
+
+            var delPT = [];
+            ctx.textAlign = "center";
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = 'white';
+            for (var i = 0; i < popText.length; i++) {
+                popText[i].x += (popText[i].ex - popText[i].x) / 15;
+                popText[i].y += (popText[i].ey - popText[i].y) / 15;
+                if (Math.abs(popText[i].x - popText[i].ex) + Math.abs(popText[i].y - popText[i].ey) < 1) {
+                    popText[i].x = popText[i].ex;
+                    popText[i].y = popText[i].ey;
+                    delPT.push(i);
+                }
+
+                ctx.fillStyle = popText[i].clr;
+                ctx.strokeText(popText[i].txt, popText[i].x + this.x, popText[i].y + this.y);
+                ctx.fillText(popText[i].txt, popText[i].x + this.x, popText[i].y + this.y);
+            }
+            for (var i = 0; i < delPT.length; i++)this.popText.splice(delPT[i], 1);
 
             ctx.restore();
 
@@ -557,10 +598,16 @@
             ctx.textAlign = "center";
             ctx.fillText("-Score Board-", myCanvas.width - 120, ty);
             ctx.textAlign = "left";
+            var pR=-1,pS=-1;
             for (var i = 0; i < sortScore.length; i++) {
+                if(sortScore[i].score!=pS){
+                    pS = sortScore[i].score;
+                    pR = i;
+                }
                 var nn = players[sortScore[i].id].name.substring(0, 10);
+                var rank = pR;
                 if (players[sortScore[i].id].name.length > 10) nn += "...";
-                ctx.fillText((i + 1) + "). " + nn, myCanvas.width - 240, ty + (i + 1) * 17);
+                ctx.fillText((rank + 1) + "). " + nn, myCanvas.width - 240, ty + (i + 1) * 17);
             }
             ctx.textAlign = "right";
             for (var i = 0; i < sortScore.length; i++)

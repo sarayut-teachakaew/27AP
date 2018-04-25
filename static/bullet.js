@@ -36,14 +36,14 @@ class Bullet {
         if(this.start>0){
             this.start--;
             var dist =  Math.sqrt(this.sx * this.sx + this.sy * this.sy)*1.5;
-            var speedR = Math.max(this.r/(dist*0.1),0.5);
+            var speedR = Math.min(this.r,Math.max(this.r/(dist*0.1),0.5));
             ctx.beginPath();
             ctx.arc(this.x-this.sx, this.y-this.sy, speedR, 0, 2 * Math.PI);
             ctx.fill();
             ctx.closePath();
         }else{
             var dist =  Math.sqrt(this.sx * this.sx + this.sy * this.sy)*1.5;
-            var speedR = Math.max(this.r/(dist*0.1),0.5);
+            var speedR = Math.min(this.r,Math.max(this.r/(dist*0.1),0.5));
             ctx.beginPath();
             ctx.ellipse(this.x-this.sx/2, this.y-this.sy/2, Math.max(dist,speedR),speedR , Math.atan2(this.sy, this.sx), 0, 2 * Math.PI);
             ctx.fill();

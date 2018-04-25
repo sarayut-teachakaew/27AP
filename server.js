@@ -42,7 +42,7 @@ for (var i = 0; i < numberPolyY; i++) {
 setInterval(update, 1000);
 function update() {
   if (spawnP.length > 0 && coins.length < Math.sqrt(players.length) * 25) {
-    for (var i = 0; i < players.length; i++)if (Math.random() <= 0.24) {
+    for (var i = 0; i < players.length; i++)if (Math.random() <= 0.40) {
       var sp = Math.floor((spawnP.length * Math.random()) % spawnP.length);
       coins.push({ id: spawnP[sp].id, x: spawnP[sp].x, y: spawnP[sp].y, value: 10 });
       io.emit('spawn coin', { id: spawnP[sp].id, x: spawnP[sp].x, y: spawnP[sp].y, value: 10 });
