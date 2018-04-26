@@ -244,12 +244,12 @@
         });
         socket.on('player disconnect', function (id) {
             //console.log(players[id]);
-            if(id in players)if (players[id].popText != [])
-                for(var i=0;i <players[id].popText.length;i++){
-                    players[id].popText[i].x+=players[id].x;
-                    players[id].popText[i].y+=players[id].y;
-                    players[id].popText[i].ex+=players[id].x;
-                    players[id].popText[i].ey+=players[id].y;
+            if (id in players) if (players[id].popText != [])
+                for (var i = 0; i < players[id].popText.length; i++) {
+                    players[id].popText[i].x += players[id].x;
+                    players[id].popText[i].y += players[id].y;
+                    players[id].popText[i].ex += players[id].x;
+                    players[id].popText[i].ey += players[id].y;
                     popText.push(players[id].popText[i]);
                     /*popText.push({ txt: players[id].popText[i].txt, x: players[id].popText[i].x+players[id].x
                         , y: players[id].popText[i].y+players[id].y, ex: players[id].popText[i].ex+players[id].ex
@@ -315,8 +315,8 @@
         socket.on('player data', function (player) {
             if (player.id in players) {
                 if (player.id != ply.id) {
-                    players[player.id].x = player.x;
-                    players[player.id].y = player.y;
+                    players[player.id].tx = player.x;
+                    players[player.id].ty = player.y;
                     players[player.id].rad = player.rad;
                     players[player.id].hp = player.hp;
                     players[player.id].visible = true;
@@ -355,7 +355,12 @@
             for (var i = 0; i < bullets.length; i++)bullets[i].update();
             for (var i = 0; i < myBull.length; i++)myBull[i].update();
 
-            socket.emit('player data', { x: ply.x, y: ply.y, rad: ply.rad, hp: ply.hp, id: ply.id, score: ply.lvl * 100 + exp });
+            for (var key in players) {
+                if (players[key].id != ply.id) {
+                    if (players[key].tx) players[key].x += (players[key].tx - players[key].x) / 3;
+                    if (players[key].ty) players[key].y += (players[key].ty - players[key].y) / 3;
+                }
+            }
 
             //console.log(myBull.length);
             if (myBull.length > 100) {
@@ -492,6 +497,10 @@
             draw();
         }
         setInterval(update, 17);
+        setInterval(update2, 100);
+        function update2() {
+            socket.emit('player data', { x: ply.x, y: ply.y, rad: ply.rad, hp: ply.hp, id: ply.id, score: ply.lvl * 100 + exp });
+        }
 
         function draw() {
             if (!mapLoad) return;
@@ -598,9 +607,9 @@
             ctx.textAlign = "center";
             ctx.fillText("-Score Board-", myCanvas.width - 120, ty);
             ctx.textAlign = "left";
-            var pR=-1,pS=-1;
+            var pR = -1, pS = -1;
             for (var i = 0; i < sortScore.length; i++) {
-                if(sortScore[i].score!=pS){
+                if (sortScore[i].score != pS) {
                     pS = sortScore[i].score;
                     pR = i;
                 }

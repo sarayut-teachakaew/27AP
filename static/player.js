@@ -1,13 +1,13 @@
-const imgSkin = { 
-    "9gag1": "/image/9gag1.png" ,"9gag2":"/image/9gag2.png","9gag3":"/image/9gag3.png"
-    ,"9gag4":"/image/9gag4.png", "9gag5":"/image/9gag5.png", "9gag6":"/image/9gag6.png"
-    , "9gag7":"/image/9gag7.png", "9gag8":"/image/9gag8.png", "9gag9":"/image/9gag9.png"
-    , "9gag10":"/image/9gag10.png", "kaimaow1":"/image/ลุงไข่.png" ,"kaimaow2":"/image/ตาใส.png"
-    , "kaimaow3":"/image/แจ๊คแม้ว.png"
+const imgSkin = {
+    "9gag1": "/image/9gag1.png", "9gag2": "/image/9gag2.png", "9gag3": "/image/9gag3.png"
+    , "9gag4": "/image/9gag4.png", "9gag5": "/image/9gag5.png", "9gag6": "/image/9gag6.png"
+    , "9gag7": "/image/9gag7.png", "9gag8": "/image/9gag8.png", "9gag9": "/image/9gag9.png"
+    , "9gag10": "/image/9gag10.png", "kaimaow1": "/image/ลุงไข่.png", "kaimaow2": "/image/ตาใส.png"
+    , "kaimaow3": "/image/แจ๊คแม้ว.png", "kaimaow4":"/image/ทู่นอส.png", "kaimaow5":"/image/ไอรอนแม้ว.png"
 };
 
 class Player {
-    constructor(name, xPos, yPos, id, skin , color1 ,color2 ,color3) {
+    constructor(name, xPos, yPos, id, skin, color1, color2, color3) {
         var _this = this;
         this.name = name;
         this.id = id;
@@ -152,8 +152,8 @@ class Player {
             }
 
             ctx.fillStyle = this.popText[i].clr;
-            ctx.strokeText(this.popText[i].txt, this.popText[i].x+this.x, this.popText[i].y+this.y);
-            ctx.fillText(this.popText[i].txt, this.popText[i].x+this.x, this.popText[i].y+this.y);
+            ctx.strokeText(this.popText[i].txt, this.popText[i].x + this.x, this.popText[i].y + this.y);
+            ctx.fillText(this.popText[i].txt, this.popText[i].x + this.x, this.popText[i].y + this.y);
         }
         for (var i = 0; i < delPT.length; i++)this.popText.splice(delPT[i], 1);
 

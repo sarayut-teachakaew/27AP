@@ -17,7 +17,7 @@ class Gun {
     }
     upGrade() {
         this.fireRate = 10 + this.pFireRate * 1.4;
-        this.bulletSpeed = Math.max(4 + Math.sqrt(this.pDamage*2) - Math.sqrt(this.pHardness)*0.8, 0.1);
+        this.bulletSpeed = Math.max(4 + Math.sqrt(this.pDamage*2)*0.85 - Math.sqrt(this.pHardness)*0.8, 0.1);
         this.hardness = 70 + this.pHardness * 30;
         this.speed = 2 + Math.sqrt(this.pSpeed) * 0.7;
         this.recoil = (1 + this.pDamage * 0.6) / (1 + this.pAccurate * 1.1) * 0.03;
