@@ -162,7 +162,7 @@ class Player {
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 4;
         ctx.strokeText(this.name, this.x, this.y + this.size);
-        ctx.fillStyle = 'white';
+        ctx.fillStyle = this.color3;
         ctx.fillText(this.name, this.x, this.y + this.size);
     }
 }

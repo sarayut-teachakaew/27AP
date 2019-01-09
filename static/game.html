@@ -243,6 +243,7 @@
             //console.log("Sending bullet");
         });
         socket.on('player disconnect', function (id) {
+            if(id == ply.id)die();
             //console.log(players[id]);
             if (id in players) if (players[id].popText != [])
                 for (var i = 0; i < players[id].popText.length; i++) {
@@ -294,7 +295,7 @@
         socket.on('pass score', function (data) {
             if (ply.id != data.id) return;
             var ex = Math.max(0, data.lvl - ply.lvl);
-            var ee = 150 + data.lvl * 7 + ex * 20
+            var ee = 250 + data.lvl * 7 + ex * 20
             exp += ee;
             ply.popText.push({ txt: Math.floor(ee), x: 0, y: 0, ex: 0, ey: -40, clr: "#FFD700" });
         });
@@ -307,8 +308,9 @@
                 break;
             }
             if (c.pId == ply.id) {
-                exp += c.exp;
-                ply.popText.push({ txt: Math.floor(c.exp), x: 0, y: 0, ex: 0, ey: -40, clr: "#FFD700" });
+                ee = c.exp;
+                exp += ee;
+                ply.popText.push({ txt: Math.floor(ee), x: 0, y: 0, ex: 0, ey: -40, clr: "#FFD700" });
             }
         });
 
@@ -378,7 +380,7 @@
 
             for (var i = 0; i < coins.length; i++) {
                 if (Math.sqrt((coins[i].x - ply.x) * (coins[i].x - ply.x)
-                    + (coins[i].y - ply.y) * (coins[i].y - ply.y)) < ply.r + coins[i].value / 5)
+                    + (coins[i].y - ply.y) * (coins[i].y - ply.y)) < ply.r + coins[i].value / 6)
                     socket.emit('get coin', { pId: ply.id, cId: coins[i].id });
             }
             myBL: for (var i = 0; i < myBull.length; i++) {
@@ -522,11 +524,11 @@
             //END draw polygon
 
             for (var i = 0; i < coins.length; i++) {
-                if (coins[i].value < 150) coins[i].value += (150 - coins[i].value) / 10000;
+                if (coins[i].value < 250) coins[i].value += (250 - coins[i].value) / 10000;
 
                 ctx.fillStyle = '#FFD700';
                 ctx.beginPath();
-                ctx.arc(coins[i].x, coins[i].y, 10 + coins[i].value / 5, 0, 2 * Math.PI);
+                ctx.arc(coins[i].x, coins[i].y, 10 + coins[i].value / 6, 0, 2 * Math.PI);
                 ctx.fill();
             }
 

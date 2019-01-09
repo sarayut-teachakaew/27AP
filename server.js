@@ -39,7 +39,7 @@ for (var i = 0; i < numberPolyY; i++) {
   polyPosX = 0;
   polyPosY += 120;
 }
-setInterval(update, 1000);
+setInterval(update, 800);
 function update() {
   if (spawnP.length > 0 && coins.length < Math.sqrt(players.length) * 25) {
     for (var i = 0; i < players.length; i++)if (Math.random() <= 0.40) {
@@ -50,12 +50,12 @@ function update() {
     }
   }
 }
-setInterval(update2, 17);
+setInterval(update2, 15);
 function update2() {
   if (players.length == 0) return;
   for (var i = 0; i < coins.length; i++) {
-    if (coins[i].value < 150)
-      coins[i].value += (150 - coins[i].value) / 10000;
+    if (coins[i].value < 250)
+      coins[i].value += (250 - coins[i].value) / 10000;
   }
 }
 var Sid={};
@@ -84,6 +84,9 @@ io.on('connection', function (socket) {
     io.emit('player disconnect', id);
   });
 
+  socket.on('KICKED', function (id) {
+    io.emit('player disconnect', id);
+  });
   socket.on('player data', function (player) {
     io.emit('player data', player);
   });
